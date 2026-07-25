@@ -1,0 +1,458 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-on-tertiary-fixed: #131d23;
+  --color-error-container: #ffdad6;
+  --color-tertiary: #556067;
+  --color-on-primary-fixed-variant: #005228;
+  --color-on-secondary-fixed-variant: #5d4200;
+  --color-on-primary-fixed: #00210c;
+  --color-outline-variant: #bccabc;
+  --color-inverse-on-surface: #e1f3ff;
+  --color-primary-fixed: #7efba4;
+  --color-secondary-fixed-dim: #fdbc13;
+  --color-on-surface: #0c1e26;
+  --color-secondary-fixed: #ffdea3;
+  --color-outline: #6d7a6e;
+  --color-on-background: #0c1e26;
+  --color-on-surface-variant: #3d4a3f;
+  --color-on-tertiary-container: #283238;
+  --color-primary: #006d37;
+  --color-primary-fixed-dim: #61de8a;
+  --color-background: #f4faff;
+  --color-surface-bright: #f4faff;
+  --color-on-primary-container: #00391a;
+  --color-on-secondary: #ffffff;
+  --color-surface-container-highest: #d3e5f1;
+  --color-inverse-primary: #61de8a;
+  --color-primary-container: #27ae60;
+  --color-on-tertiary: #ffffff;
+  --color-on-secondary-container: #6b4d00;
+  --color-tertiary-fixed-dim: #bdc8d0;
+  --color-surface-container: #dff1fc;
+  --color-inverse-surface: #22333b;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-error: #ffffff;
+  --color-secondary-container: #fdbc13;
+  --color-tertiary-container: #8f9aa2;
+  --color-on-secondary-fixed: #261900;
+  --color-secondary: #7a5900;
+  --color-surface-dim: #cbdde8;
+  --color-surface-tint: #006d37;
+  --color-surface-container-high: #d9ebf6;
+  --color-surface-container-low: #e8f6ff;
+  --color-error: #ba1a1a;
+  --color-surface-variant: #d3e5f1;
+  --color-surface: #f4faff;
+  --color-on-primary: #ffffff;
+  --color-on-tertiary-fixed-variant: #3e484f;
+  --color-on-error-container: #93000a;
+  --color-tertiary-fixed: #d9e4ec;
+
+  --color-warning: #b45309;
+  --color-on-warning: #ffffff;
+  --color-warning-container: #fef3c7;
+  --color-on-warning-container: #92400e;
+  --color-freeze: #0284c7;
+  --color-on-freeze: #ffffff;
+  --color-freeze-container: #e0f2fe;
+  --color-on-freeze-container: #0c4a6e;
+
+  --font-display-lg: 'Domine', serif;
+  --font-headline-lg: 'Domine', serif;
+  --font-headline-md: 'Domine', serif;
+  --font-headline-lg-mobile: 'Domine', serif;
+  --font-body-lg: 'Work Sans', sans-serif;
+  --font-body-md: 'Work Sans', sans-serif;
+  --font-body-sm: 'Work Sans', sans-serif;
+  --font-label-lg: 'Work Sans', sans-serif;
+  --font-label-md: 'Work Sans', sans-serif;
+  --font-label-sm: 'Work Sans', sans-serif;
+  --font-label-xs: 'Work Sans', sans-serif;
+
+  --text-display-lg: 2.25rem;
+  --text-headline-lg: 2rem;
+  --text-headline-md: 1.75rem;
+  --text-headline-lg-mobile: 1.5rem;
+  --text-body-lg: 1rem;
+  --text-body-md: 0.875rem;
+  --text-body-sm: 0.75rem;
+  --text-label-lg: 1rem;
+  --text-label-md: 0.875rem;
+  --text-label-sm: 0.75rem;
+  --text-label-xs: 0.625rem;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: 'Work Sans', sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6, .domine {
+  font-family: 'Domine', serif;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Modern button press effect */
+.btn-press {
+  transition: all 0.15s ease;
+}
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* Theme-aware shadow utilities */
+.shadow-brand-sm {
+  box-shadow: 0 4px 24px rgba(0, 109, 55, 0.1);
+}
+.shadow-brand-md {
+  box-shadow: 0 4px 24px rgba(0, 109, 55, 0.15);
+}
+.shadow-brand-lg {
+  box-shadow: 0 4px 20px rgba(0, 109, 55, 0.25);
+}
+.shadow-brand-xl {
+  box-shadow: 0 4px 20px rgba(0, 109, 55, 0.3);
+}
+.shadow-ambient-sm {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+.shadow-ambient {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+.shadow-ambient-lg {
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+}
+
+.dark .shadow-brand-sm { box-shadow: 0 4px 24px rgba(74, 222, 128, 0.08); }
+.dark .shadow-brand-md { box-shadow: 0 4px 24px rgba(74, 222, 128, 0.12); }
+.dark .shadow-brand-lg { box-shadow: 0 4px 20px rgba(74, 222, 128, 0.2); }
+.dark .shadow-brand-xl { box-shadow: 0 4px 20px rgba(74, 222, 128, 0.25); }
+.dark .shadow-ambient-sm { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15); }
+.dark .shadow-ambient { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); }
+.dark .shadow-ambient-lg { box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3); }
+
+.black .shadow-brand-sm,
+.black .shadow-brand-md,
+.black .shadow-brand-lg,
+.black .shadow-brand-xl { box-shadow: none; }
+.black .shadow-ambient-sm,
+.black .shadow-ambient,
+.black .shadow-ambient-lg { box-shadow: none; }
+
+.white .shadow-brand-sm { box-shadow: 0 4px 24px rgba(0, 109, 55, 0.08); }
+.white .shadow-brand-md { box-shadow: 0 4px 24px rgba(0, 109, 55, 0.12); }
+.white .shadow-brand-lg { box-shadow: 0 4px 20px rgba(0, 109, 55, 0.2); }
+.white .shadow-brand-xl { box-shadow: 0 4px 20px rgba(0, 109, 55, 0.25); }
+.white .shadow-ambient-sm { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02); }
+.white .shadow-ambient { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
+.white .shadow-ambient-lg { box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08); }
+
+/* Focus visible ring - global default */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Smooth page transitions */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fadeUp 0.3s ease-out;
+}
+
+/* Staggered list animation */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in {
+  animation: slideIn 0.35s ease-out both;
+}
+
+/* Scale-in for modals and cards */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out both;
+}
+
+/* Subtle float for FABs */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Glow pulse for active streaks */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 109, 55, 0.15); }
+  50% { box-shadow: 0 0 30px rgba(0, 109, 55, 0.25); }
+}
+.animate-glow {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, var(--color-surface-container-low) 25%, var(--color-surface-container) 50%, var(--color-surface-container-low) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Slide up for bottom sheets */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Page transition enter */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-page-enter {
+  animation: pageEnter 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Bottom sheet enter */
+@keyframes sheetEnter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-sheet-enter {
+  animation: sheetEnter 0.35s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Modal backdrop */
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-backdrop-in {
+  animation: backdropIn 0.2s ease-out both;
+}
+
+/* Stagger children in lists */
+.stagger-children > * {
+  animation: slideIn 0.35s ease-out both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 40ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 160ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 280ms; }
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-slide-in,
+  .animate-spin,
+  .animate-pulse,
+  .animate-bounce {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── Dark Mode ── */
+.dark {
+  --color-background: #0f172a;
+  --color-on-background: #e2e8f0;
+  --color-surface: #1e293b;
+  --color-surface-dim: #0f172a;
+  --color-surface-bright: #334155;
+  --color-surface-container-lowest: #0b1120;
+  --color-surface-container-low: #1a2332;
+  --color-surface-container: #1e293b;
+  --color-surface-container-high: #263347;
+  --color-surface-container-highest: #334155;
+  --color-surface-variant: #334155;
+  --color-on-surface: #e2e8f0;
+  --color-on-surface-variant: #94a3b8;
+  --color-outline: #64748b;
+  --color-outline-variant: #334155;
+  --color-inverse-surface: #e2e8f0;
+  --color-inverse-on-surface: #1e293b;
+  --color-inverse-primary: #006d37;
+  --color-primary: #4ade80;
+  --color-primary-container: #166534;
+  --color-on-primary: #003314;
+  --color-on-primary-container: #bbf7d0;
+  --color-secondary: #facc15;
+  --color-secondary-container: #854d0e;
+  --color-on-secondary: #422006;
+  --color-on-secondary-container: #fef08a;
+  --color-tertiary: #94a3b8;
+  --color-tertiary-container: #475569;
+  --color-on-tertiary: #1e293b;
+  --color-on-tertiary-container: #cbd5e1;
+  --color-error: #fca5a5;
+  --color-error-container: #7f1d1d;
+  --color-on-error: #450a0a;
+  --color-on-error-container: #fecaca;
+
+  --color-warning: #fbbf24;
+  --color-on-warning: #422006;
+  --color-warning-container: #78350f;
+  --color-on-warning-container: #fde68a;
+  --color-freeze: #38bdf8;
+  --color-on-freeze: #0c4a6e;
+  --color-freeze-container: #075985;
+  --color-on-freeze-container: #bae6fd;
+}
+
+/* ── AMOLED Black Mode ── */
+.black {
+  --color-background: #000000;
+  --color-on-background: #f0f0f0;
+  --color-surface: #0a0a0a;
+  --color-surface-dim: #000000;
+  --color-surface-bright: #1a1a1a;
+  --color-surface-container-lowest: #000000;
+  --color-surface-container-low: #0a0a0a;
+  --color-surface-container: #111111;
+  --color-surface-container-high: #1a1a1a;
+  --color-surface-container-highest: #222222;
+  --color-surface-variant: #1a1a1a;
+  --color-on-surface: #f0f0f0;
+  --color-on-surface-variant: #a0a0a0;
+  --color-outline: #555555;
+  --color-outline-variant: #222222;
+  --color-inverse-surface: #f0f0f0;
+  --color-inverse-on-surface: #0a0a0a;
+  --color-inverse-primary: #006d37;
+  --color-primary: #ffffff;
+  --color-primary-container: #1a1a1a;
+  --color-on-primary: #000000;
+  --color-on-primary-container: #e0e0e0;
+  --color-secondary: #facc15;
+  --color-secondary-container: #2a2000;
+  --color-on-secondary: #000000;
+  --color-on-secondary-container: #fef08a;
+  --color-tertiary: #a0a0a0;
+  --color-tertiary-container: #333333;
+  --color-on-tertiary: #000000;
+  --color-on-tertiary-container: #e0e0e0;
+  --color-error: #fca5a5;
+  --color-error-container: #3d0000;
+  --color-on-error: #000000;
+  --color-on-error-container: #fecaca;
+
+  --color-warning: #fbbf24;
+  --color-on-warning: #000000;
+  --color-warning-container: #2a2000;
+  --color-on-warning-container: #fde68a;
+  --color-freeze: #38bdf8;
+  --color-on-freeze: #000000;
+  --color-freeze-container: #0c4a6e;
+  --color-on-freeze-container: #bae6fd;
+}
+
+/* ── White Mode (high contrast) ── */
+.white {
+  --color-background: #ffffff;
+  --color-on-background: #000000;
+  --color-surface: #ffffff;
+  --color-surface-dim: #f5f5f5;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f8f8f8;
+  --color-surface-container: #f0f0f0;
+  --color-surface-container-high: #e8e8e8;
+  --color-surface-container-highest: #e0e0e0;
+  --color-surface-variant: #e8e8e8;
+  --color-on-surface: #000000;
+  --color-on-surface-variant: #444444;
+  --color-outline: #666666;
+  --color-outline-variant: #cccccc;
+  --color-inverse-surface: #000000;
+  --color-inverse-on-surface: #ffffff;
+  --color-inverse-primary: #00aa44;
+  --color-primary: #006d37;
+  --color-primary-container: #e0f5e8;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #00391a;
+  --color-secondary: #7a5900;
+  --color-secondary-container: #fef3c7;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #5d4200;
+  --color-tertiary: #374151;
+  --color-tertiary-container: #e5e7eb;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #1f2937;
+  --color-error: #dc2626;
+  --color-error-container: #fee2e2;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #991b1b;
+
+  --color-warning: #d97706;
+  --color-on-warning: #ffffff;
+  --color-warning-container: #fef3c7;
+  --color-on-warning-container: #92400e;
+  --color-freeze: #0284c7;
+  --color-on-freeze: #ffffff;
+  --color-freeze-container: #e0f2fe;
+  --color-on-freeze-container: #0c4a6e;
+}

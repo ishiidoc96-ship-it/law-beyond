@@ -1,0 +1,33 @@
+{
+  "name": "Future Lawyer",
+  "short_name": "LawBeyond",
+  "description": "Build Better Habits. Beyond the Law.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4faff",
+  "theme_color": "#006d37",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["education", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Streaks",
+      "short_name": "Streaks",
+      "url": "/streaks"
+    },
+    {
+      "name": "Planner",
+      "short_name": "Planner",
+      "url": "/planner"
+    }
+  ]
+}
