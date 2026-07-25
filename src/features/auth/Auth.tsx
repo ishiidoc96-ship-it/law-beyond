@@ -11,7 +11,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [showSignUpSuccess, setShowSignUpSuccess] = useState(false)
-  const { signIn, signUp, user } = useAuth()
+  const { signIn, signUp, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
 
   // Redirect if already logged in
@@ -41,12 +41,9 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setLoading(true)
     setError('')
-    try {
-      // PocketBase supports OAuth - redirect to OAuth provider
-      // For now, show a message that Google OAuth needs PocketBase OAuth config
-      setError('Google sign-in requires OAuth configuration in PocketBase. Please use email/password.')
-    } catch {
-      setError('Google sign-in is not available yet')
+    const result = await signInWithGoogle()
+    if (result.error) {
+      setError(result.error)
     }
     setLoading(false)
   }

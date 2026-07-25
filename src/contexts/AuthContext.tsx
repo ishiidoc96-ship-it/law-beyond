@@ -10,6 +10,7 @@ interface AuthContextValue {
   configured: boolean
   signUp: (email: string, password: string, fullName: string) => Promise<{ error?: string }>
   signIn: (email: string, password: string) => Promise<{ error?: string }>
+  signInWithGoogle: () => Promise<{ error?: string }>
   signOut: () => Promise<void>
   updateProfile: (data: Partial<DbProfile>) => Promise<{ error?: string }>
   refreshProfile: () => Promise<void>
@@ -17,7 +18,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue>({
   user: null, profile: null, loading: true, configured: false,
-  signUp: async () => ({}), signIn: async () => ({}), signOut: async () => {},
+  signUp: async () => ({}), signIn: async () => ({}), signInWithGoogle: async () => ({}), signOut: async () => {},
   updateProfile: async () => ({}), refreshProfile: async () => {},
 })
 
@@ -87,6 +88,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' })
+      // Auto-create profile if new user
+      if (authData?.record?.id) {
+        const existingProfile = await getProfile(authData.record.id).catch(() => null)
+        if (!existingProfile?.data) {
+          await upsertProfile(authData.record.id, {
+            full_name: authData.record.name || authData.record.username || '',
+            email: authData.record.email || '',
+            avatar_url: authData.record.avatarUrl || '',
+          }).catch(() => {})
+        }
+      }
+      return {}
+    } catch (e: any) {
+      return { error: e?.message || 'Google sign-in failed' }
+    }
+  }, [])
+
   const signOut = useCallback(async () => {
     pb.authStore.clear()
     setUser(null)
@@ -110,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, loadProfile])
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, configured, signUp, signIn, signOut, updateProfile, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, configured, signUp, signIn, signInWithGoogle, signOut, updateProfile, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
