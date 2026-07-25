@@ -50,7 +50,7 @@ export default function SuggestedUsers({ onAddFriend }: Props) {
       setRequestStatuses(prev => ({ ...prev, [userId]: action === 'auto_accepted' ? 'accepted' : 'pending' }))
       onAddFriend?.()
     } else {
-      toast.error(data?.error || 'Failed to send request')
+      toast.error('Failed to send request')
     }
   }
 
@@ -87,12 +87,6 @@ export default function SuggestedUsers({ onAddFriend }: Props) {
               </p>
               {u.university && (
                 <p className="font-label-xs text-label-xs text-on-surface-variant text-center truncate w-full">{u.university}</p>
-              )}
-              {u.current_streak > 0 && (
-                <span className="flex items-center gap-1 font-label-xs text-label-xs text-warning">
-                  <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-                  {u.current_streak}
-                </span>
               )}
               <button
                 onClick={() => handleSendRequest(u.id)}

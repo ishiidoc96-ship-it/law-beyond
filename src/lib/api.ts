@@ -1,5 +1,6 @@
 import { pb } from './pb'
-import type { RecordModel, RecordListOptions } from 'pocketbase'
+import type { RecordModel } from 'pocketbase'
+import { getCurrentUserId } from './pb'
 
 // ── Helpers ──
 function handleResult<T>(data: T | null, error?: any): { data: T | null; error: any } {
@@ -124,10 +125,11 @@ export async function deleteHabit(habitId: string) {
   } catch (e) { return handleResult<void>(null, pbError(e)) }
 }
 
-export async function getHabitCompletions(userId: string, date: string) {
+export async function getHabitCompletions(userId: string, date?: string) {
   try {
+    const today = date || new Date().toISOString().split('T')[0]
     const records = await pb.collection('habit_completions').getFullList({
-      filter: `user = "${userId}" && completed_date = "${date}"`,
+      filter: `user = "${userId}" && completed_date = "${today}"`,
     })
     return handleResult<DbHabitCompletion[]>(records.map(mapHabitCompletion))
   } catch (e) { return handleResult<DbHabitCompletion[]>(null, pbError(e)) }
@@ -440,12 +442,23 @@ export async function deleteStreakPost(postId: string) {
 // ── Streak Likes ──
 export async function likeStreakPost(postId: string, userId: string) {
   try {
-    // Check if already liked
     const existing = await pb.collection('streak_likes').getFullList({
       filter: `post = "${postId}" && user = "${userId}"`,
     })
     if (existing.length > 0) return handleResult<void>(null)
     await pb.collection('streak_likes').create({ post: postId, user: userId })
+    // Notify post owner (skip self-likes)
+    try {
+      const posts = await pb.collection('streak_posts').getFullList({ filter: `id = "${postId}"`, limit: 1 })
+      if (posts.length > 0) {
+        const postOwner = typeof posts[0].user === 'string' ? posts[0].user : posts[0].user?.id
+        if (postOwner && postOwner !== userId) {
+          const likerProfile = await pb.collection('profiles').getFullList({ filter: `user = "${userId}"`, limit: 1 })
+          const name = likerProfile.length > 0 ? (likerProfile[0].full_name || 'Someone') : 'Someone'
+          await notify(postOwner, 'like', 'New like', `${name} liked your post`, `/streaks`, userId)
+        }
+      }
+    } catch { /* best-effort */ }
     return handleResult<void>(null)
   } catch (e) { return handleResult<void>(null, pbError(e)) }
 }
@@ -492,6 +505,18 @@ export async function getStreakComments(postId: string) {
 export async function addStreakComment(postId: string, userId: string, content: string) {
   try {
     const record = await pb.collection('streak_comments').create({ post: postId, user: userId, content })
+    // Notify post owner (skip self-comments)
+    try {
+      const posts = await pb.collection('streak_posts').getFullList({ filter: `id = "${postId}"`, limit: 1 })
+      if (posts.length > 0) {
+        const postOwner = typeof posts[0].user === 'string' ? posts[0].user : posts[0].user?.id
+        if (postOwner && postOwner !== userId) {
+          const commenterProfile = await pb.collection('profiles').getFullList({ filter: `user = "${userId}"`, limit: 1 })
+          const name = commenterProfile.length > 0 ? (commenterProfile[0].full_name || 'Someone') : 'Someone'
+          await notify(postOwner, 'comment', 'New comment', `${name} commented: "${content.slice(0, 60)}${content.length > 60 ? '...' : ''}"`, `/streaks`, userId)
+        }
+      }
+    } catch { /* best-effort */ }
     return handleResult<DbStreakComment>({
       id: record.id, post_id: postId, user_id: userId, content,
       created_at: record.created || new Date().toISOString(), profiles: null,
@@ -531,7 +556,6 @@ export async function useStreakFreeze(userId: string) {
 
     const today = new Date().toISOString().split('T')[0]
     const lastPost = s.last_post_date ? new Date(s.last_post_date).toISOString().split('T')[0] : null
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
 
     if (lastPost === today) return handleResult<any>(null, { message: 'Already posted today, no freeze needed' })
 
@@ -636,13 +660,28 @@ export async function sendFriendRequest(receiverId: string) {
     }
 
     await pb.collection('friend_requests').create({ sender: senderId, receiver: receiverId, status: 'pending' })
+    // Notify receiver
+    const senderProfile = await pb.collection('profiles').getFullList({ filter: `user = "${senderId}"`, limit: 1 })
+    const senderName = senderProfile.length > 0 ? (senderProfile[0].full_name || 'Someone') : 'Someone'
+    await notify(receiverId, 'friend_request', 'Friend request', `${senderName} sent you a friend request`, '/streaks', senderId)
     return { data: { success: true, action: 'sent' }, error: null }
   } catch (e) { return { data: null, error: pbError(e) } }
 }
 
 export async function respondFriendRequest(requestId: string, accept: boolean) {
   try {
+    const request = await pb.collection('friend_requests').getFullList({ filter: `id = "${requestId}"`, limit: 1 })
     await pb.collection('friend_requests').update(requestId, { status: accept ? 'accepted' : 'rejected' })
+    // Notify sender if accepted
+    if (accept && request.length > 0) {
+      const senderId = typeof request[0].sender === 'string' ? request[0].sender : request[0].sender?.id
+      const receiverId = typeof request[0].receiver === 'string' ? request[0].receiver : request[0].receiver?.id
+      if (senderId && receiverId) {
+        const receiverProfile = await pb.collection('profiles').getFullList({ filter: `user = "${receiverId}"`, limit: 1 })
+        const name = receiverProfile.length > 0 ? (receiverProfile[0].full_name || 'Someone') : 'Someone'
+        await notify(senderId, 'friend_accept', 'Friend request accepted', `${name} accepted your friend request`, '/streaks', receiverId)
+      }
+    }
     return handleResult<any>({ success: true })
   } catch (e) { return handleResult<any>(null, pbError(e)) }
 }
@@ -683,6 +722,7 @@ export interface SuggestedUser {
   full_name: string
   avatar_url: string | null
   email: string
+  university?: string
 }
 
 export async function getSuggestedUsers(limit: number = 10) {
@@ -697,6 +737,7 @@ export async function getSuggestedUsers(limit: number = 10) {
     return handleResult<SuggestedUser[]>(records.map(p => ({
       id: p.id, user_id: p.user, full_name: p.full_name || 'Unknown',
       avatar_url: p.avatar_url || null, email: p.email || '',
+      university: p.university || undefined,
     })))
   } catch (e) { return handleResult<SuggestedUser[]>(null, pbError(e)) }
 }
@@ -749,6 +790,15 @@ export async function hasPendingRequest(userId: string, otherId: string) {
 // ── Notifications ──
 export interface DbNotification {
   id: string; user_id: string; type: string; title: string; body: string; link: string | null; actor_id: string | null; read: boolean; created_at: string
+}
+
+async function notify(userId: string, type: string, title: string, body: string, link?: string, actorId?: string) {
+  try {
+    await pb.collection('notifications').create({
+      user: userId, type, title, body,
+      link: link || '', actor: actorId || '', read: false,
+    })
+  } catch { /* best-effort */ }
 }
 
 export async function getNotifications(userId: string, limit: number = 50) {

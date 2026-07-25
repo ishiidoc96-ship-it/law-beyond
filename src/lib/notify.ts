@@ -45,7 +45,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     const auth = (json.keys?.auth as string) || ''
 
     // Save to PocketBase push_subscriptions collection
-    const { data: existing } = await pb.collection('push_subscriptions').getList(1, 1, {
+    const existing = await pb.collection('push_subscriptions').getList(1, 1, {
       filter: `user = "${userId}" && endpoint = "${endpoint}"`,
     })
 
@@ -72,7 +72,7 @@ export async function unsubscribeFromPush(userId: string): Promise<boolean> {
     const endpoint = subscription.endpoint
 
     // Remove from PocketBase
-    const { data: existing } = await pb.collection('push_subscriptions').getList(1, 1, {
+    const existing = await pb.collection('push_subscriptions').getList(1, 1, {
       filter: `user = "${userId}" && endpoint = "${endpoint}"`,
     })
 

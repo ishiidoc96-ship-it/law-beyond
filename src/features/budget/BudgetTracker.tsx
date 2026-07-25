@@ -56,339 +56,299 @@ function getWeekDays() {
   return days
 }
 
+function getWeekData(transactions: DbTransaction[]) {
+  const days = getWeekDays()
+  return days.map(d => {
+    const dayTx = transactions.filter(t => t.date.startsWith(d.date))
+    const income = dayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+    const expense = dayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+    return { ...d, income, expense }
+  })
+}
+
 export default function BudgetTracker() {
   const { user } = useAuth()
   const [transactions, setTransactions] = useState<DbTransaction[]>([])
   const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [deleting, setDeleting] = useState<string | null>(null)
-
-  const [formTitle, setFormTitle] = useState('')
-  const [formDescription, setFormDescription] = useState('')
-  const [formAmount, setFormAmount] = useState('')
-  const [formType, setFormType] = useState<'income' | 'expense'>('expense')
-  const [formCategory, setFormCategory] = useState('')
-  const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0])
-  const [formError, setFormError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [type, setType] = useState<'income' | 'expense'>('expense')
+  const [amount, setAmount] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('general')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!user) return
-    setLoading(true)
-    getTransactions(user.id).then(({ data }) => {
-      setTransactions(data || [])
+    async function load() {
+      if (!user?.id) return
+      const { data } = await getTransactions(user.id)
+      if (data) setTransactions(data)
       setLoading(false)
+    }
+    load()
+  }, [user?.id])
+
+  const balance = transactions.reduce((acc, t) => acc + (t.type === 'income' ? t.amount : -t.amount), 0)
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const weekData = getWeekData(transactions)
+  const maxDayAmount = Math.max(...weekData.map(d => d.income + d.expense), 1)
+
+  const categories = [
+    { id: 'retainer', label: 'Retainer', icon: 'description' },
+    { id: 'court_fees', label: 'Court Fees', icon: 'account_balance' },
+    { id: 'food', label: 'Food', icon: 'local_cafe' },
+    { id: 'general', label: 'General', icon: 'payments' },
+  ]
+
+  const handleCreate = async () => {
+    if (!user || !amount || Number(amount) <= 0) return
+    const { error: createError } = await createTransaction(user.id, {
+      title: description.trim() || `${type === 'income' ? 'Income' : 'Expense'}`,
+      type,
+      amount: Number(amount),
+      category: type === 'income' ? 'general' : category,
+      date: new Date().toISOString().split('T')[0],
     })
-  }, [user])
-
-  const totalIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0)
-
-  const totalExpenses = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0)
-
-  const balance = totalIncome - totalExpenses
-
-  const weekDays = getWeekDays()
-  const weeklySpending = weekDays.map(day => {
-    const dayTotal = transactions
-      .filter(t => t.type === 'expense' && t.transaction_date === day.date)
-      .reduce((sum, t) => sum + t.amount, 0)
-    return { ...day, total: dayTotal }
-  })
-  const maxWeekly = Math.max(...weeklySpending.map(d => d.total), 1)
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setFormError('')
-    if (!user) return
-    if (!formTitle.trim()) {
-      setFormError('Title is required')
+    if (createError) {
+      setError('Failed to add transaction')
       return
     }
-    const amount = parseFloat(formAmount)
-    if (isNaN(amount) || amount <= 0) {
-      setFormError('Enter a valid amount')
-      return
-    }
-    setSubmitting(true)
-    const { data, error } = await createTransaction(user.id, {
-      title: formTitle.trim(),
-      description: formDescription.trim() || undefined,
-      amount,
-      type: formType,
-      category: formCategory.trim() || undefined,
-      transaction_date: formDate,
-    })
-    setSubmitting(false)
-    if (error) {
-      setFormError(error.message)
-      return
-    }
-    if (data) {
-      setTransactions(prev => [data, ...prev])
-    }
-    resetForm()
-    setModalOpen(false)
+    setShowModal(false)
+    setAmount('')
+    setDescription('')
+    setCategory('general')
+    const { data } = await getTransactions(user.id)
+    if (data) setTransactions(data)
   }
 
-  async function handleDelete(id: string) {
+  const handleDelete = async (id: string) => {
     if (!user) return
-    setDeleting(id)
-    const { error } = await deleteTransaction(id, user.id)
-    if (!error) {
+    const { error: deleteError } = await deleteTransaction(id)
+    if (!deleteError) {
       setTransactions(prev => prev.filter(t => t.id !== id))
     }
-    setDeleting(null)
-  }
-
-  function resetForm() {
-    setFormTitle('')
-    setFormDescription('')
-    setFormAmount('')
-    setFormType('expense')
-    setFormCategory('')
-    setFormDate(new Date().toISOString().split('T')[0])
-    setFormError('')
-  }
-
-  if (!user) {
-    return (
-      <main className="flex-grow w-full max-w-[1280px] mx-auto px-4 md:px-8 py-4 md:py-8 pb-24 md:pb-8">
-        <div className="grid grid-cols-4 md:grid-cols-12 gap-4">
-          <div className="col-span-4 md:col-span-12 flex items-center justify-center min-h-[400px]">
-            <p className="font-body-lg text-on-surface-variant">Please log in to view your budget.</p>
-          </div>
-        </div>
-      </main>
-    )
   }
 
   return (
-    <main className="flex-grow w-full max-w-[1280px] mx-auto px-4 md:px-8 py-4 md:py-8 pb-24 md:pb-8">
-      <div className="grid grid-cols-4 md:grid-cols-12 gap-4">
-        <section className="col-span-4 md:col-span-12 bg-primary-container text-on-primary-container rounded-[24px] p-6 flex flex-col items-center justify-center relative overflow-hidden shadow-sm">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary opacity-10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none" />
-          <h2 className="font-label-md text-label-md opacity-90 mb-1 z-10 uppercase tracking-wider">Available Balance</h2>
-          <div className="font-display-lg text-display-lg mb-3 z-10">{formatCurrency(balance)}</div>
-          <div className="flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full z-10 backdrop-blur-sm">
-            <span className="material-symbols-outlined text-[16px]">{totalIncome > totalExpenses ? 'trending_up' : 'trending_down'}</span>
-            <span className="font-label-sm text-label-sm">
-              {totalIncome > totalExpenses ? '+' : ''}{totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome * 100).toFixed(1) : 0}% of income
-            </span>
-          </div>
-          <button
-            aria-label="Add new transaction"
-            onClick={() => { resetForm(); setModalOpen(true) }}
-            className="mt-4 z-10 bg-on-primary-container text-primary-container px-6 py-2.5 rounded-full font-label-md text-label-md font-bold hover:opacity-90 transition-opacity active:scale-[0.98]"
-          >
-            <span className="material-symbols-outlined text-[18px] align-middle mr-1">add</span>
-            Add Transaction
-          </button>
-        </section>
+    <main className="pt-[80px] pb-[100px] px-4 md:px-8 max-w-[1280px] mx-auto animate-fade-up">
+      <div className="mb-6">
+        <h2 className="font-headline-lg text-[28px] md:text-[32px] leading-tight tracking-[-0.02em] font-bold text-on-surface">Budget</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant">Track your income and expenses.</p>
+      </div>
 
-        <section className="col-span-2 md:col-span-6 bg-surface border border-outline-variant rounded-[24px] p-6 flex flex-col justify-between hover:bg-surface-container-low transition-all duration-200 hover:shadow-sm">
-          <div className="flex items-center gap-3 mb-3 text-on-surface-variant">
-            <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined text-[20px]">arrow_downward</span>
+      {/* Balance Card */}
+      <section className="mb-6 bg-gradient-to-br from-primary to-primary-container rounded-3xl p-6 text-on-primary shadow-brand-lg relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+        <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+        <p className="font-label-sm text-label-sm text-on-primary/70 uppercase tracking-wider mb-1">Total Balance</p>
+        <p className="font-display-lg text-display-lg font-bold">{formatCurrency(balance)}</p>
+        <div className="flex gap-6 mt-4">
+          <div>
+            <div className="flex items-center gap-1 text-on-primary/70 mb-0.5">
+              <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
+              <span className="font-label-xs text-label-xs uppercase">Income</span>
             </div>
-            <h3 className="font-label-md text-label-md font-medium">Total Income</h3>
+            <p className="font-headline-sm text-headline-sm text-on-primary font-semibold">{formatCurrency(totalIncome)}</p>
           </div>
-          <div className="font-headline-md text-headline-md text-on-surface tracking-tight">{formatCurrency(totalIncome)}</div>
-        </section>
-
-        <section className="col-span-2 md:col-span-6 bg-surface border border-outline-variant rounded-[24px] p-6 flex flex-col justify-between hover:bg-surface-container-low transition-all duration-200 hover:shadow-sm">
-          <div className="flex items-center gap-3 mb-3 text-on-surface-variant">
-            <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-error">
-              <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
+          <div>
+            <div className="flex items-center gap-1 text-on-primary/70 mb-0.5">
+              <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
+              <span className="font-label-xs text-label-xs uppercase">Expenses</span>
             </div>
-            <h3 className="font-label-md text-label-md font-medium">Total Expenses</h3>
+            <p className="font-headline-sm text-headline-sm text-on-primary font-semibold">{formatCurrency(totalExpense)}</p>
           </div>
-          <div className="font-headline-md text-headline-md text-on-surface tracking-tight">{formatCurrency(totalExpenses)}</div>
-        </section>
+        </div>
+      </section>
 
-        <section className="col-span-4 md:col-span-7 bg-surface border border-outline-variant p-4 flex flex-col gap-4 rounded-[24px]">
-          <div className="flex justify-between items-center">
-            <h3 className="font-headline-md text-headline-md text-on-surface">Spending Overview</h3>
-            <span className="text-primary font-label-sm text-label-sm">Weekly</span>
-          </div>
-          <div className="flex items-end justify-between h-48 gap-1 md:gap-2 mt-auto pt-2 border-b border-surface-variant pb-1">
-            {weeklySpending.map((day, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 flex-1 group">
-                <div className="w-full bg-surface-variant rounded-t-sm h-full flex items-end overflow-hidden">
+      {/* Week Chart */}
+      <section className="mb-6 bg-surface rounded-2xl border border-outline-variant/30 p-5 shadow-ambient-sm">
+        <h4 className="font-label-md text-label-md text-on-surface-variant mb-4 uppercase tracking-wider">This Week</h4>
+        <div className="flex items-end justify-between gap-2 h-32">
+          {weekData.map((d) => {
+            const total = d.income + d.expense
+            const height = total > 0 ? (total / maxDayAmount) * 100 : 4
+            return (
+              <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full flex flex-col items-center justify-end" style={{ height: '100%' }}>
                   <div
-                    className={`w-full transition-colors ${day.isToday ? 'bg-primary' : 'bg-tertiary-container group-hover:bg-primary'}`}
-                    style={{ height: `${maxWeekly > 0 ? (day.total / maxWeekly) * 100 : 0}%` }}
+                    className={`w-full max-w-[32px] rounded-t-lg transition-all duration-300 ${d.isToday ? 'bg-primary' : 'bg-primary/30'}`}
+                    style={{ height: `${height}%`, minHeight: d.isToday ? '8px' : '4px' }}
                   />
                 </div>
-                <span className={`font-label-sm text-label-sm ${day.isToday ? 'text-on-surface font-bold' : 'text-on-surface-variant'}`}>
-                  {day.label}
-                </span>
+                <span className={`font-label-xs text-label-xs ${d.isToday ? 'text-primary font-bold' : 'text-on-surface-variant'}`}>{d.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Category Breakdown */}
+      <section className="mb-6">
+        <h4 className="font-label-md text-label-md text-on-surface-variant mb-3 uppercase tracking-wider">Categories</h4>
+        <div className="grid grid-cols-2 gap-3">
+          {categories.map((cat) => {
+            const catTotal = transactions.filter(t => t.category === cat.id && t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+            return (
+              <div key={cat.id} className="bg-surface rounded-2xl border border-outline-variant/30 p-4 card-hover">
+                <div className={`w-10 h-10 rounded-xl ${CATEGORY_BGS[cat.id] || CATEGORY_BGS.general} flex items-center justify-center mb-2`}>
+                  <span className="material-symbols-outlined text-[20px]">{cat.icon}</span>
+                </div>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">{cat.label}</p>
+                <p className="font-headline-sm text-headline-sm text-on-surface">{formatCurrency(catTotal)}</p>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Transactions */}
+      <section className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Recent Transactions</h4>
+          <button
+            onClick={() => { setType('expense'); setShowModal(true) }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold hover:opacity-90 transition-all active:scale-[0.98] shadow-brand-sm"
+          >
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            Add
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col gap-2">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-16 bg-surface-container-low rounded-2xl border border-outline-variant/30 skeleton" />
+            ))}
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="flex flex-col items-center py-12 bg-surface rounded-3xl border border-outline-variant/50 border-dashed">
+            <div className="w-16 h-16 rounded-2xl bg-primary-container/30 flex items-center justify-center mb-3">
+              <span className="material-symbols-outlined text-[32px] text-on-primary-container/60">savings</span>
+            </div>
+            <p className="font-headline-sm text-headline-sm text-on-surface mb-1">No transactions yet</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Add your first transaction to get started</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {transactions.slice(0, 20).map((t) => (
+              <div key={t.id} className="flex items-center gap-3 p-4 rounded-2xl bg-surface border border-outline-variant/30 card-hover">
+                <div className={`w-10 h-10 rounded-xl ${getIconBg(t.category)} flex items-center justify-center flex-shrink-0`}>
+                  <span className="material-symbols-outlined text-[20px]">{getIcon(t.category)}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-body-md text-body-md text-on-surface font-medium truncate">{t.title}</p>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">{formatDate(t.date)}</p>
+                </div>
+                <p className={`font-headline-sm text-headline-sm font-semibold ${t.type === 'income' ? 'text-primary' : 'text-error'}`}>
+                  {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                </p>
+                <button
+                  onClick={() => handleDelete(t.id)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant/40 hover:bg-error-container/30 hover:text-error transition-colors flex-shrink-0"
+                >
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                </button>
               </div>
             ))}
           </div>
-        </section>
+        )}
+      </section>
 
-        <section className="col-span-4 md:col-span-5 bg-surface border border-outline-variant p-4 flex flex-col rounded-[24px]">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-headline-md text-headline-md text-on-surface">Recent Activity</h3>
+      {/* FAB */}
+      <button
+        onClick={() => { setType('expense'); setShowModal(true) }}
+        className="md:hidden fixed bottom-[96px] right-4 w-14 h-14 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-brand-xl hover:scale-105 transition-all z-40 active:scale-95"
+      >
+        <span className="material-symbols-outlined text-[28px]">add</span>
+      </button>
+
+      {/* Modal */}
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="New Transaction">
+        <div className="flex flex-col gap-4">
+          {/* Type Toggle */}
+          <div className="flex gap-2">
             <button
-              onClick={() => { resetForm(); setModalOpen(true) }}
-              className="p-2 rounded-full hover:bg-surface-container-high transition-colors active:scale-95"
+              onClick={() => setType('expense')}
+              className={`flex-1 py-2.5 rounded-xl font-label-sm text-label-sm font-semibold transition-all active:scale-95 ${
+                type === 'expense' ? 'bg-error text-on-error' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30'
+              }`}
             >
-              <span className="material-symbols-outlined text-on-surface-variant text-[24px]">add_circle</span>
+              Expense
+            </button>
+            <button
+              onClick={() => setType('income')}
+              className={`flex-1 py-2.5 rounded-xl font-label-sm text-label-sm font-semibold transition-all active:scale-95 ${
+                type === 'income' ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30'
+              }`}
+            >
+              Income
             </button>
           </div>
-          {loading ? (
-            <div className="flex-grow flex items-center justify-center">
-              <span className="material-symbols-outlined text-[32px] text-on-surface-variant animate-spin">progress_activity</span>
-            </div>
-          ) : transactions.length === 0 ? (
-            <div className="flex-grow flex flex-col items-center justify-center gap-3 py-8">
-              <span className="material-symbols-outlined text-[48px] text-on-surface-variant/40">account_balance_wallet</span>
-              <p className="font-body-md text-on-surface-variant">No transactions yet</p>
-              <button
-                onClick={() => { resetForm(); setModalOpen(true) }}
-                className="text-primary font-label-md text-label-md font-bold hover:underline"
-              >
-                Add your first transaction
-              </button>
-            </div>
-          ) : (
-            <ul className="flex flex-col gap-1 flex-grow overflow-y-auto hide-scrollbar">
-              {transactions.map(tx => (
-                <li key={tx.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-surface-container-low transition-all duration-200 group border border-transparent hover:border-outline-variant">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${getIconBg(tx.category)}`}>
-                      <span className="material-symbols-outlined text-[24px]">{getIcon(tx.category)}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-body-md font-medium text-on-surface">{tx.title}</h4>
-                      <p className="font-label-sm text-label-sm text-on-surface-variant">
-                        {tx.category || tx.description || 'No details'} · {formatDate(tx.transaction_date)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-right">
-                      <div className={`font-body-md font-bold ${tx.type === 'income' ? 'text-primary' : 'text-on-surface'}`}>
-                        {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                      </div>
-                    </div>
-                    <button
-                      aria-label={`Delete transaction: ${tx.title}`}
-                      onClick={() => handleDelete(tx.id)}
-                      disabled={deleting === tx.id}
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/60 hover:bg-error-container hover:text-error transition-all active:scale-90 disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">
-                        {deleting === tx.id ? 'progress_activity' : 'close'}
-                      </span>
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add Transaction">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {formError && (
-            <div className="bg-error-container text-on-error-container px-4 py-2 rounded-xl font-label-sm text-label-sm">
-              {formError}
-            </div>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label-sm text-label-sm text-on-surface-variant">Title *</label>
-            <input
-              type="text"
-              value={formTitle}
-              onChange={e => setFormTitle(e.target.value)}
-              className="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              placeholder="e.g. Client retainer payment"
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="font-label-sm text-label-sm text-on-surface-variant">Description</label>
-            <input
-              type="text"
-              value={formDescription}
-              onChange={e => setFormDescription(e.target.value)}
-              className="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              placeholder="Optional details"
-            />
-          </div>
-          <div className="flex gap-3">
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">Amount *</label>
+          {/* Amount */}
+          <div>
+            <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block">Amount</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-semibold">$</span>
               <input
                 type="number"
-                step="0.01"
-                min="0.01"
-                value={formAmount}
-                onChange={e => setFormAmount(e.target.value)}
-                className="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">Type *</label>
-              <select
-                value={formType}
-                onChange={e => setFormType(e.target.value as 'income' | 'expense')}
-                className="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all appearance-none cursor-pointer"
-              >
-                <option value="expense">Expense</option>
-                <option value="income">Income</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">Category</label>
-              <input
-                type="text"
-                value={formCategory}
-                onChange={e => setFormCategory(e.target.value)}
-                className="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                placeholder="e.g. retainer, food"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">Date</label>
-              <input
-                type="date"
-                value={formDate}
-                onChange={e => setFormDate(e.target.value)}
-                className="bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all cursor-pointer"
+                min="0"
+                step="0.01"
+                className="w-full pl-8 pr-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-headline-md"
               />
             </div>
           </div>
+
+          {/* Description */}
+          <div>
+            <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block">Description</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What was this for?"
+              className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+          </div>
+
+          {/* Category (expense only) */}
+          {type === 'expense' && (
+            <div>
+              <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block">Category</label>
+              <div className="grid grid-cols-2 gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCategory(cat.id)}
+                    className={`flex items-center gap-2 py-2.5 px-3 rounded-xl font-body-sm text-body-sm font-medium transition-all active:scale-95 ${
+                      category === cat.id
+                        ? 'bg-primary text-on-primary shadow-brand-sm'
+                        : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/30'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">{cat.icon}</span>
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-error-container/30 text-on-error-container px-4 py-2.5 rounded-xl font-label-sm text-label-sm text-center">{error}</div>
+          )}
+
           <button
-            type="submit"
-            disabled={submitting}
-            className="mt-2 w-full py-3 bg-primary text-on-primary rounded-full font-label-md text-label-md font-bold hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+            onClick={handleCreate}
+            disabled={!amount || Number(amount) <= 0}
+            className="w-full py-3 rounded-xl bg-primary text-on-primary font-bold shadow-brand-md hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
           >
-            {submitting ? (
-              <>
-                <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-                Adding...
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-[20px]">add</span>
-                Add Transaction
-              </>
-            )}
+            Add {type === 'income' ? 'Income' : 'Expense'}
           </button>
-        </form>
+        </div>
       </Modal>
     </main>
   )

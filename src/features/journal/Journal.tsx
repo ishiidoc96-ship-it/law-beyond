@@ -51,9 +51,9 @@ export default function Journal() {
     setSaving(true)
     setError('')
     const { error: saveError } = await createJournalEntry(user.id, {
+      title: entry.trim().slice(0, 50),
       content: entry.trim(),
       mood: moods[selectedMood],
-      prompt: 'What made you a better version of yourself today?',
     })
     if (saveError) {
       setError('Failed to save entry. Please try again.')
@@ -67,96 +67,85 @@ export default function Journal() {
 
   const handleDelete = async (id: string) => {
     if (!user) return
-    const { error } = await deleteJournalEntry(id, user.id)
+    const { error } = await deleteJournalEntry(id)
     if (!error) {
       setEntries(prev => prev.filter(e => e.id !== id))
     }
   }
 
   return (
-    <main className="w-full max-w-2xl mx-auto px-5 py-6 flex flex-col gap-6 relative z-10 pb-32">
+    <main className="w-full max-w-2xl mx-auto px-5 py-6 flex flex-col gap-6 relative z-10 pb-32 animate-fade-up">
       <section className="flex flex-col gap-4 mt-4 md:mt-0">
         <h1 className="font-headline-lg text-[32px] leading-[40px] tracking-[-0.02em] font-bold text-on-surface">How are you today?</h1>
-        <div className="flex justify-between items-center bg-surface-container-lowest border border-outline/20 rounded-[24px] p-3 shadow-sm">
+        <div className="flex justify-between items-center bg-surface-container-low border border-outline-variant/30 rounded-[24px] p-3 shadow-ambient-sm">
           {moods.map((mood, i) => (
             <button
               key={i}
               onClick={() => setSelectedMood(i)}
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-[24px] hover:bg-surface-container-high transition-colors focus:ring-2 focus:ring-primary/50 outline-none ${
-                selectedMood === i ? 'bg-primary-container scale-110 shadow-sm border border-primary/20' : ''
+              className={`w-11 h-11 rounded-full flex items-center justify-center text-xl transition-all active:scale-90 ${
+                selectedMood === i ? 'bg-primary text-on-primary scale-110 shadow-brand-sm' : 'hover:bg-surface-container-high'
               }`}
             >
               {mood}
             </button>
           ))}
         </div>
-      </section>
 
-      <section className="flex flex-col gap-2 relative group">
         {error && (
-          <div className="bg-error-container/30 text-on-error-container px-4 py-2.5 rounded-xl font-label-sm text-label-sm">
-            {error}
-          </div>
+          <div className="bg-error-container/30 text-on-error-container px-4 py-2.5 rounded-xl font-label-sm text-label-sm">{error}</div>
         )}
-        <div className="bg-surface-container-lowest border border-outline/20 rounded-[24px] p-5 shadow-sm flex flex-col gap-4 relative overflow-hidden z-10 transition-all duration-300 focus-within:border-primary/50 focus-within:shadow-md focus-within:ring-2">
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-primary mt-1" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
-            <p className="font-body-md text-body-md text-on-surface font-medium leading-relaxed font-semibold">
-              What made you a better version of yourself today?
-            </p>
-          </div>
-          <textarea
-            className="w-full min-h-[160px] bg-transparent border-none text-on-surface font-body-md text-body-md placeholder:text-outline focus:ring-0 resize-none p-0 mt-2"
-            placeholder="Start typing your thoughts..."
-            value={entry}
-            onChange={(e) => setEntry(e.target.value)}
-          />
-        </div>
-      </section>
 
-      <section className="flex items-center gap-4 mt-2">
+        <textarea
+          value={entry}
+          onChange={(e) => setEntry(e.target.value)}
+          placeholder="Write about your day..."
+          className="w-full min-h-[120px] p-4 rounded-[20px] bg-surface-container-low border border-outline-variant/30 text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none shadow-ambient-sm transition-all"
+        />
+
         <button
           onClick={handleSave}
           disabled={!entry.trim() || saving}
-          className="flex-1 h-14 rounded-[24px] bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center gap-2 uppercase tracking-widest shadow-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="w-full py-3 rounded-[16px] bg-primary text-on-primary font-bold shadow-brand-md hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
         >
-          <span className="material-symbols-outlined text-[20px]">check_circle</span>
           {saving ? 'Saving...' : 'Save Entry'}
         </button>
       </section>
 
-      <section className="mt-6 flex flex-col gap-4">
-        <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-2">Previous Entries</h2>
+      <section className="flex flex-col gap-3">
+        <h2 className="font-headline-sm text-[20px] text-on-surface mt-2">Past Entries</h2>
+
         {loading ? (
-          <div className="text-center py-12">
-            <span className="material-symbols-outlined text-outline text-[40px] animate-spin">progress_activity</span>
-          </div>
-        ) : entries.length === 0 ? (
-          <div className="text-center py-12 flex flex-col items-center gap-3">
-            <span className="material-symbols-outlined text-outline text-[48px]">menu_book</span>
-            <p className="font-body-md text-on-surface-variant">No entries yet. Start journaling!</p>
-          </div>
-        ) : (
           <div className="flex flex-col gap-3">
-            {entries.map((e) => (
-              <article key={e.id} className="bg-surface-container-lowest rounded-[24px] p-5 border border-outline/20 hover:border-primary/50 hover:shadow-md transition-all flex flex-col gap-2 relative overflow-hidden group shadow-sm hover:-translate-y-1">
-                <div className="flex justify-between items-center w-full">
-                  <span className="font-label-md text-label-md text-on-surface-variant">{formatDate(e.created_at)}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[16px]">{e.mood}</span>
-                    <button
-                      aria-label="Delete entry"
-                      onClick={(ev) => { ev.stopPropagation(); handleDelete(e.id) }}
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-on-surface-variant/60 hover:bg-error-container hover:text-error transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[16px] text-on-surface-variant">close</span>
-                    </button>
-                  </div>
-                </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">{e.content}</p>
-              </article>
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-24 bg-surface-container-low rounded-2xl border border-outline-variant/30 skeleton" />
             ))}
           </div>
+        ) : entries.length === 0 ? (
+          <div className="flex flex-col items-center py-12 bg-surface rounded-3xl border border-outline-variant/50 border-dashed">
+            <div className="w-16 h-16 rounded-2xl bg-primary-container/30 flex items-center justify-center mb-3">
+              <span className="material-symbols-outlined text-[32px] text-on-primary-container/60">menu_book</span>
+            </div>
+            <p className="font-headline-sm text-headline-sm text-on-surface mb-1">No entries yet</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Start journaling!</p>
+          </div>
+        ) : (
+          entries.map((e) => (
+            <div key={e.id} className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-4 shadow-ambient-sm card-hover">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{e.mood}</span>
+                  <span className="text-xs text-on-surface-variant/60">{formatDate(e.created_at)}</span>
+                </div>
+                <button
+                  onClick={() => handleDelete(e.id)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant/40 hover:bg-error-container/30 hover:text-error transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                </button>
+              </div>
+              <p className="text-on-surface mt-2 whitespace-pre-wrap leading-relaxed">{e.content}</p>
+            </div>
+          ))
         )}
       </section>
     </main>

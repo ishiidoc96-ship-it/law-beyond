@@ -1,46 +1,77 @@
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
 const navItems = [
-  { to: '/', label: 'Home', icon: 'home' },
-  { to: '/planner', label: 'Planner', icon: 'calendar_today' },
-  { to: '/streaks', label: 'Streaks', icon: 'local_fire_department' },
-  { to: '/budget', label: 'Budget', icon: 'account_balance_wallet' },
-  { to: '/habits', label: 'Habits', icon: 'self_improvement' },
-  { to: '/journal', label: 'Journal', icon: 'auto_stories' },
-  { to: '/profile', label: 'Profile', icon: 'person' },
+  { to: '/', icon: 'home', label: 'Home' },
+  { to: '/planner', icon: 'calendar_month', label: 'Planner' },
+  { to: '/habits', icon: 'check_circle', label: 'Habits' },
+  { to: '/journal', icon: 'menu_book', label: 'Journal' },
+  { to: '/budget', icon: 'savings', label: 'Budget' },
+  { to: '/streaks', icon: 'local_fire_department', label: 'Streaks' },
+  { to: '/profile', icon: 'person', label: 'Profile' },
 ]
 
 export default function DesktopSidebar() {
+  const { user, signOut } = useAuth()
+
   return (
-    <nav aria-label="Sidebar navigation" className="hidden md:flex h-screen w-[260px] fixed left-0 top-0 bg-surface border-r border-outline-variant/60 flex-col py-6 px-5 z-50">
-      <div className="mb-8 flex items-center gap-3">
-        <img src="/logo.svg" alt="LB" className="w-10 h-10 rounded-xl" />
-        <span className="font-headline-md text-headline-md font-bold text-on-surface tracking-tight">LB</span>
-      </div>
-      <ul className="flex flex-col gap-1 flex-grow">
-        {navItems.map(({ to, label, icon }) => (
-          <li key={to}>
-            <NavLink
-              to={to}
-              aria-label={label}
-              className={({ isActive }) =>
-                isActive
-                  ? 'flex items-center gap-3 px-4 py-3 rounded-2xl text-primary font-bold bg-primary/10 transition-all'
-                  : 'flex items-center gap-3 px-4 py-3 rounded-2xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-all'
-              }
-            >
-              <span className="material-symbols-outlined text-[22px]">{icon}</span>
-              <span className="font-label-md text-label-md">{label}</span>
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-auto pt-4">
-        <div className="bg-gradient-to-br from-primary to-primary-container rounded-2xl p-4 text-center">
-          <span className="material-symbols-outlined text-[28px] text-on-primary mb-1">local_fire_department</span>
-          <p className="font-label-md text-label-md text-on-primary font-medium">Keep your streak alive!</p>
+    <aside className="hidden md:flex flex-col w-64 h-screen bg-surface-container-low border-r border-outline-variant/20 p-4 fixed left-0 top-0 z-30">
+      <div className="flex items-center gap-2 mb-8 px-2">
+        <div className="w-9 h-9 rounded-full gradient-accent flex items-center justify-center">
+          <span className="material-symbols-outlined text-white text-xl">balance</span>
         </div>
+        <h1 className="font-[family-name:var(--font-headline-lg)] text-xl font-bold text-on-surface">
+          Law Beyond
+        </h1>
       </div>
-    </nav>
+
+      <nav className="flex-1 space-y-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === '/'}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <span className={`material-symbols-outlined text-[20px] ${isActive ? 'filled' : ''}`}>
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
+                {isActive && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-nav-indicator" />
+                )}
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="mt-auto pt-4 border-t border-outline-variant/20 space-y-2">
+        <div className="flex items-center gap-2 px-3 py-2">
+          <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center">
+            <span className="material-symbols-outlined text-on-primary-container text-lg">person</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-on-surface truncate">{user?.name || 'User'}</p>
+            <p className="text-xs text-on-surface-variant truncate">{user?.email}</p>
+          </div>
+        </div>
+        <button
+          onClick={signOut}
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-error-container/30 hover:text-error transition-colors"
+        >
+          <span className="material-symbols-outlined text-[20px]">logout</span>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </aside>
   )
 }

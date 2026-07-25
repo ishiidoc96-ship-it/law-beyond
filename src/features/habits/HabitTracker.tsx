@@ -59,20 +59,20 @@ export default function HabitTracker() {
 
   const handleToggle = async (habitId: string) => {
     if (!user) return
-    const isCompleted = completedIds.has(habitId)
-    const { error: toggleError } = await toggleHabitCompletion(user.id, habitId, !isCompleted)
+    const today = new Date().toISOString().split('T')[0]
+    const { data, error: toggleError } = await toggleHabitCompletion(user.id, habitId, today)
     if (toggleError) {
       setError('Failed to update habit')
       return
     }
-    if (isCompleted) {
+    if (data?.completed) {
+      setCompletedIds(prev => new Set(prev).add(habitId))
+    } else {
       setCompletedIds(prev => {
         const next = new Set(prev)
         next.delete(habitId)
         return next
       })
-    } else {
-      setCompletedIds(prev => new Set(prev).add(habitId))
     }
   }
 
@@ -96,7 +96,7 @@ export default function HabitTracker() {
 
   const handleDelete = async (habitId: string) => {
     if (!user) return
-    const { error: deleteError } = await deleteHabit(habitId, user.id)
+    const { error: deleteError } = await deleteHabit(habitId)
     if (deleteError) {
       setError('Failed to delete habit')
       return
@@ -120,7 +120,7 @@ export default function HabitTracker() {
         </div>
       )}
 
-      <section className="mb-8 bg-surface border border-outline-variant/50 rounded-3xl p-5 shadow-ambient-sm flex flex-col md:flex-row gap-6 items-center">
+      <section className="mb-8 bg-gradient-to-br from-primary-container/50 to-surface border border-outline-variant/30 rounded-3xl p-5 shadow-brand-sm flex flex-col md:flex-row gap-6 items-center">
         <div className="relative w-32 h-32 flex-shrink-0">
           <svg className="w-full h-full" viewBox="0 0 100 100">
             <circle className="text-surface-container-high" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" strokeWidth="8" />
@@ -128,22 +128,23 @@ export default function HabitTracker() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="font-headline-md text-headline-md font-bold text-on-surface">{percentage}%</span>
+            <span className="font-label-xs text-label-xs text-on-surface-variant">done</span>
           </div>
         </div>
         <div className="flex-1 w-full grid grid-cols-2 gap-3">
-          <div className="bg-surface-container-low rounded-2xl p-4 flex flex-col items-start justify-center">
-            <div className="flex items-center gap-1 text-on-surface-variant mb-1">
-              <span className="material-symbols-outlined text-[14px]">local_fire_department</span>
-              <span className="font-label-sm text-label-sm uppercase tracking-wider">Current Streak</span>
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-4 flex flex-col items-start justify-center border border-primary/10">
+            <div className="flex items-center gap-1 text-primary mb-1">
+              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
+              <span className="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Current Streak</span>
             </div>
             <div className="font-headline-md text-headline-md text-primary flex items-baseline gap-1">
               12 <span className="font-label-sm text-label-sm text-on-surface-variant">days</span>
             </div>
           </div>
-          <div className="bg-surface-container-low rounded-2xl p-4 flex flex-col items-start justify-center">
-            <div className="flex items-center gap-1 text-on-surface-variant mb-1">
-              <span className="material-symbols-outlined text-[14px]">emoji_events</span>
-              <span className="font-label-sm text-label-sm uppercase tracking-wider">Longest</span>
+          <div className="bg-gradient-to-br from-secondary-container/20 to-secondary-container/5 rounded-2xl p-4 flex flex-col items-start justify-center border border-secondary-container/20">
+            <div className="flex items-center gap-1 text-secondary-container mb-1">
+              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+              <span className="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Longest</span>
             </div>
             <div className="font-headline-md text-headline-md text-on-surface flex items-baseline gap-1">
               45 <span className="font-label-sm text-label-sm text-on-surface-variant">days</span>
@@ -162,15 +163,20 @@ export default function HabitTracker() {
         </div>
 
         {loading && (
-          <div className="flex justify-center py-12">
-            <span className="material-symbols-outlined text-4xl text-on-surface-variant animate-spin">progress_activity</span>
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="h-20 bg-surface-container-low rounded-2xl border border-outline-variant/30 skeleton" />
+            ))}
           </div>
         )}
 
         {!loading && habits.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 bg-surface rounded-3xl border border-outline-variant/50 border-dashed">
-            <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-3">psychology</span>
-            <p className="font-body-lg text-body-lg text-on-surface-variant text-center">No habits yet. Start building discipline!</p>
+            <div className="w-16 h-16 rounded-2xl bg-primary-container/30 flex items-center justify-center mb-3">
+              <span className="material-symbols-outlined text-[32px] text-on-primary-container/60">psychology</span>
+            </div>
+            <p className="font-headline-sm text-headline-sm text-on-surface mb-1">No habits yet</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant text-center">Start building discipline!</p>
           </div>
         )}
 
@@ -178,10 +184,10 @@ export default function HabitTracker() {
           const isDone = completedIds.has(habit.id)
           const progressPercent = isDone ? 100 : 0
           return (
-            <div key={habit.id} className="group bg-surface rounded-2xl p-4 border border-outline-variant/50 hover:shadow-ambient transition-all flex flex-col gap-3">
+            <div key={habit.id} className="group bg-surface rounded-2xl p-4 border border-outline-variant/30 card-hover flex flex-col gap-3">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-tertiary'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isDone ? 'bg-primary text-on-primary shadow-brand-sm' : 'bg-surface-container-high text-tertiary'}`}>
                     <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>{habit.icon}</span>
                   </div>
                   <div>
@@ -200,9 +206,9 @@ export default function HabitTracker() {
                   <button
                     aria-label={`${isDone ? 'Mark incomplete' : 'Mark complete'}: ${habit.name}`}
                     onClick={() => handleToggle(habit.id)}
-                    className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all ${
+                    className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all active:scale-90 ${
                       isDone
-                        ? 'bg-primary border-primary text-on-primary'
+                        ? 'bg-primary border-primary text-on-primary shadow-brand-sm'
                         : 'border-outline-variant text-outline-variant hover:border-primary hover:text-primary'
                     }`}
                   >

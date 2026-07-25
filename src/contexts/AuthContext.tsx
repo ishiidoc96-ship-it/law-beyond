@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
 
     // Subscribe to auth changes
-    const unsubscribe = pb.authStore.onChange((token, record) => {
+    const unsubscribe = pb.authStore.onChange((_token, record) => {
       setUser(record)
       if (record) {
         loadProfile(record.id)

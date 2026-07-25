@@ -192,7 +192,7 @@ export default function Streaks() {
 
       {/* Tabs */}
       <section className="mb-6">
-        <div className="flex gap-1 bg-surface-container-low rounded-full p-1 w-fit">
+        <div className="flex gap-1 bg-surface-container rounded-full p-1 w-fit glass">
           {([
             { id: 'feed' as Tab, icon: 'dynamic_feed', label: 'Feed' },
             { id: 'discover' as Tab, icon: 'explore', label: 'Discover' },
@@ -202,13 +202,13 @@ export default function Streaks() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-label-md text-label-md font-semibold transition-all duration-300 ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${
                 activeTab === tab.id
-                  ? 'bg-primary text-on-primary shadow-brand-sm'
+                  ? 'bg-primary text-on-primary shadow-md'
                   : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
               }`}
             >
-              <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
+              <span className={`material-symbols-outlined text-[18px] ${activeTab === tab.id ? 'filled' : ''}`}>{tab.icon}</span>
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}

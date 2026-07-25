@@ -18,7 +18,7 @@ export default function FriendSearch() {
   const [loading, setLoading] = useState(false)
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set())
   const [requestStatuses, setRequestStatuses] = useState<Record<string, string>>({})
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const handleSearch = useCallback(async (q: string) => {
     setQuery(q)
@@ -73,7 +73,7 @@ export default function FriendSearch() {
       playFriendSound()
       setRequestStatuses(prev => ({ ...prev, [userId]: action === 'auto_accepted' ? 'accepted' : 'pending' }))
     } else {
-      toast.error(data?.error || 'Failed to send request')
+      toast.error('Failed to send request')
     }
   }
 

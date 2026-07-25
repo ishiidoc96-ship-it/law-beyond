@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo } from 'react'
+import { useState, useRef, memo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   likeStreakPost,

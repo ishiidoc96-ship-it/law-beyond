@@ -13,7 +13,6 @@ export default function StreakCalendar({ currentStreak }: StreakCalendarProps) {
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [postedDates, setPostedDates] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
-  const [animDirection, setAnimDirection] = useState<'left' | 'right' | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -37,13 +36,11 @@ export default function StreakCalendar({ currentStreak }: StreakCalendarProps) {
     'July', 'August', 'September', 'October', 'November', 'December']
 
   const prevMonth = () => {
-    setAnimDirection('left')
     if (month === 1) { setMonth(12); setYear(y => y - 1) }
     else setMonth(m => m - 1)
   }
 
   const nextMonth = () => {
-    setAnimDirection('right')
     if (month === 12) { setMonth(1); setYear(y => y + 1) }
     else setMonth(m => m + 1)
   }
@@ -102,7 +99,6 @@ export default function StreakCalendar({ currentStreak }: StreakCalendarProps) {
             const posted = postedDates.includes(day)
             const isToday = isCurrentMonth && day === today.getDate()
             const isFuture = isCurrentMonth && day > today.getDate()
-            const isPast = isCurrentMonth && day < today.getDate()
             const isWeekend = (i + firstDayOfWeek) % 7 === 0 || (i + firstDayOfWeek) % 7 === 6
 
             return (

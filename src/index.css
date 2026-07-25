@@ -310,10 +310,151 @@ h1, h2, h3, h4, h5, h6, .domine {
   .animate-slide-in,
   .animate-spin,
   .animate-pulse,
-  .animate-bounce {
+  .animate-bounce,
+  .animate-glow,
+  .animate-float,
+  .card-hover {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ── Card hover effects ── */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+.dark .card-hover:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Glassmorphism effect ── */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.dark .glass {
+  background: rgba(30, 41, 59, 0.7);
+}
+.black .glass {
+  background: rgba(10, 10, 10, 0.7);
+}
+
+/* ── Notification bell pulse ── */
+@keyframes bellPulse {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.15); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.animate-bell-pulse {
+  animation: bellPulse 0.5s ease-in-out;
+}
+
+/* ── Badge bounce ── */
+@keyframes badgeBounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.animate-badge-bounce {
+  animation: badgeBounce 0.3s ease-out both;
+}
+
+/* ── Ripple effect for interactive elements ── */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(0, 109, 55, 0.15) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.ripple:active::after {
+  opacity: 1;
+}
+
+/* ── Gradient accent background ── */
+.gradient-accent {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
+}
+.gradient-warm {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+}
+.gradient-cool {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+/* ── Better focus rings ── */
+.focus-ring {
+  transition: box-shadow 0.2s ease;
+}
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 109, 55, 0.3);
+  outline: none;
+}
+
+/* ── Improved empty state ── */
+.empty-state-icon {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ── Smooth scroll snap ── */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-snap-center {
+  scroll-snap-align: center;
+}
+
+/* ── Active nav indicator slide ── */
+@keyframes navIndicator {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.animate-nav-indicator {
+  animation: navIndicator 0.2s ease-out both;
+}
+
+/* ── Skeleton loading polish ── */
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--color-surface-container-low) 0%,
+    var(--color-surface-container) 40%,
+    var(--color-surface-container-low) 80%
+  );
+  background-size: 300% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ── Confetti burst for streaks ── */
+@keyframes confettiBurst {
+  0% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+  100% { opacity: 0; transform: scale(0.8) rotate(360deg); }
+}
+.animate-confetti {
+  animation: confettiBurst 0.8s ease-out both;
+}
+
+/* ── Theme transition ── */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+html * {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
 }
 
 /* ── Dark Mode ── */

@@ -12,7 +12,7 @@ export default function MusicPlayer({ src, artwork, title, artist, compact = fal
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [_duration, setDuration] = useState(0)
 
   useEffect(() => {
     const audio = audioRef.current

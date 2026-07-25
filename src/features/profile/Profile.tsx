@@ -45,238 +45,249 @@ export default function Profile() {
       const result = await uploadAvatar(file)
       await updateProfile({ avatar_url: result.secure_url })
       setSaveMsg('Profile photo updated!')
-    } catch (err) {
-      setSaveMsg(err instanceof Error ? err.message : 'Upload failed')
-    } finally {
-      setUploadingAvatar(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
+    } catch {
+      setSaveMsg('Failed to upload photo')
     }
+    setUploadingAvatar(false)
   }
 
-  const saveProfile = async () => {
+  const handleSave = async () => {
+    if (!user) return
     setSaving(true)
+    setSaveMsg('')
     const { error } = await updateProfile({
-      full_name: fullName,
-      university,
-      course,
-      year_of_study: yearOfStudy,
+      full_name: fullName.trim(),
+      university: university.trim(),
+      course: course.trim(),
+      year_of_study: yearOfStudy.trim(),
     })
-    setSaving(false)
     if (error) {
-      setSaveMsg('Error saving profile')
+      setSaveMsg('Failed to save profile')
     } else {
-      setSaveMsg('Profile saved!')
+      setSaveMsg('Profile updated!')
       setEditing(false)
     }
+    setSaving(false)
   }
 
-  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User'
-  const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-
-  const togglePush = async () => {
-    if (!user) return
+  const handlePushToggle = async () => {
     setPushLoading(true)
-    if (pushEnabled) {
-      await unsubscribeFromPush(user.id)
-      setPushEnabled(false)
-      toast.success('Notifications disabled')
-    } else {
-      const granted = await requestNotificationPermission()
-      if (granted === 'granted') {
-        const ok = await subscribeToPush(user.id)
-        setPushEnabled(ok)
-        if (ok) toast.success('Notifications enabled! You\'ll receive streak reminders.')
-        else toast.error('Failed to enable notifications')
-      } else if (granted === 'denied') {
-        toast.error('Notifications blocked. Enable them in your browser settings.')
+    try {
+      if (pushEnabled) {
+        await unsubscribeFromPush(user!.id)
+        setPushEnabled(false)
+        toast.success('Push notifications disabled')
       } else {
-        toast.error('Permission not granted')
+        const granted = await requestNotificationPermission()
+        if (granted) {
+          await subscribeToPush(user!.id)
+          setPushEnabled(true)
+          toast.success('Push notifications enabled')
+        } else {
+          toast.error('Notification permission denied')
+        }
       }
+    } catch {
+      toast.error('Failed to update push settings')
     }
     setPushLoading(false)
   }
 
+  const themes = [
+    { value: 'light' as const, label: 'Light', icon: 'light_mode' },
+    { value: 'dark' as const, label: 'Dark', icon: 'dark_mode' },
+    { value: 'black' as const, label: 'AMOLED', icon: 'contrast' },
+    { value: 'white' as const, label: 'White', icon: 'brightness_high' },
+  ]
+
   return (
-    <main className="max-w-3xl mx-auto px-5 py-6 flex flex-col gap-6 md:mt-8 pb-24 animate-fade-up">
-      <section className="flex flex-col items-center text-center gap-4">
-        <div className="relative">
-          {profile?.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={displayName}
-              className="w-28 h-28 rounded-full object-cover border-4 border-outline-variant/30"
-            />
-          ) : (
-            <div className="w-28 h-28 rounded-full bg-primary-container flex items-center justify-center">
-              <span className="font-headline-lg text-headline-lg text-on-primary-container font-bold">{initials}</span>
-            </div>
-          )}
+    <main className="pt-[80px] pb-[100px] px-4 md:px-8 max-w-[1280px] mx-auto animate-fade-up">
+      <div className="mb-6">
+        <h2 className="font-headline-lg text-[28px] md:text-[32px] leading-tight tracking-[-0.02em] font-bold text-on-surface">Profile</h2>
+        <p className="font-body-md text-body-md text-on-surface-variant">Manage your account settings.</p>
+      </div>
+
+      {/* Avatar Section */}
+      <section className="mb-8 flex flex-col items-center">
+        <div className="relative mb-4">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-on-primary text-3xl font-bold shadow-brand-lg overflow-hidden">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              (user?.name || 'U')[0].toUpperCase()
+            )}
+          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-brand-sm hover:scale-110 transition-all active:scale-90"
+          >
+            <span className="material-symbols-outlined text-[16px]">{uploadingAvatar ? 'progress_activity' : 'camera_alt'}</span>
+          </button>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            accept="image/*"
             className="hidden"
             onChange={handleAvatarUpload}
           />
-          <button
-            aria-label="Change profile photo"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingAvatar}
-            className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-surface border border-outline-variant/50 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors shadow-sm active:scale-95 disabled:opacity-50"
-          >
-            {uploadingAvatar ? (
-              <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-            ) : (
-              <span className="material-symbols-outlined text-[18px]">photo_camera</span>
-            )}
-          </button>
         </div>
-        <div>
-          <h1 className="font-headline-lg text-[28px] leading-tight tracking-[-0.02em] font-bold text-on-surface mb-1">{displayName}</h1>
-          {profile?.university && (
-            <p className="font-body-md text-body-md text-on-surface-variant flex items-center justify-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-primary">school</span>
-              {profile.university}
-            </p>
-          )}
-          {profile?.course && (
-            <p className="font-body-md text-body-md text-on-surface-variant flex items-center justify-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-primary">book</span>
-              {profile.course}{profile.year_of_study ? ` · Year ${profile.year_of_study}` : ''}
-            </p>
-          )}
-          {!profile?.university && !profile?.course && (
-            <p className="font-body-md text-body-md text-on-surface-variant">{profile?.email || user?.email}</p>
-          )}
-        </div>
+        <h3 className="font-headline-md text-headline-md text-on-surface">{profile?.full_name || user?.name || 'User'}</h3>
+        <p className="font-body-sm text-body-sm text-on-surface-variant">{user?.email}</p>
       </section>
 
-      {editing && (
-        <section className="bg-surface border border-outline-variant/50 rounded-3xl p-6 flex flex-col gap-4 shadow-ambient">
-          <h3 className="font-headline-md text-headline-md text-on-surface">Edit Profile</h3>
-          <div className="flex flex-col gap-3">
-            {[
-              { value: fullName, onChange: setFullName, placeholder: 'Full Name' },
-              { value: university, onChange: setUniversity, placeholder: 'University' },
-              { value: course, onChange: setCourse, placeholder: 'Course (e.g. LLB Law)' },
-              { value: yearOfStudy, onChange: setYearOfStudy, placeholder: 'Year of Study' },
-            ].map((field, i) => (
+      {/* Profile Info */}
+      <section className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Personal Info</h4>
+          {!editing && (
+            <button
+              onClick={startEditing}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold hover:bg-primary/20 transition-colors active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[16px]">edit</span>
+              Edit
+            </button>
+          )}
+        </div>
+
+        {editing ? (
+          <div className="bg-surface rounded-2xl border border-outline-variant/30 p-5 flex flex-col gap-4">
+            <div>
+              <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block">Full Name</label>
               <input
-                key={i}
-                className="w-full px-4 py-3 rounded-xl border border-outline-variant/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 font-body-md text-body-md bg-surface-container-low text-on-surface transition-all"
-                placeholder={field.placeholder}
-                value={field.value}
-                onChange={(e) => field.onChange(e.target.value)}
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
               />
+            </div>
+            <div>
+              <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block">University</label>
+              <input
+                type="text"
+                value={university}
+                onChange={(e) => setUniversity(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+            <div>
+              <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block">Course</label>
+              <input
+                type="text"
+                value={course}
+                onChange={(e) => setCourse(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+            <div>
+              <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block">Year of Study</label>
+              <input
+                type="text"
+                value={yearOfStudy}
+                onChange={(e) => setYearOfStudy(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setEditing(false)}
+                className="flex-1 py-3 rounded-xl bg-surface-container-low text-on-surface-variant font-semibold border border-outline-variant/30 hover:bg-surface-container-high transition-all active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 py-3 rounded-xl bg-primary text-on-primary font-bold shadow-brand-md hover:opacity-90 transition-all disabled:opacity-50 active:scale-[0.98]"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+            {saveMsg && (
+              <p className={`text-sm text-center ${saveMsg.includes('Failed') ? 'text-error' : 'text-primary'}`}>{saveMsg}</p>
+            )}
+          </div>
+        ) : (
+          <div className="bg-surface rounded-2xl border border-outline-variant/30 divide-y divide-outline-variant/20">
+            {[
+              { label: 'Full Name', value: profile?.full_name || 'Not set', icon: 'person' },
+              { label: 'University', value: profile?.university || 'Not set', icon: 'school' },
+              { label: 'Course', value: profile?.course || 'Not set', icon: 'menu_book' },
+              { label: 'Year', value: profile?.year_of_study || 'Not set', icon: 'calendar_today' },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-3 px-5 py-4">
+                <span className="material-symbols-outlined text-[20px] text-on-surface-variant/60">{item.icon}</span>
+                <div className="flex-1">
+                  <p className="font-label-sm text-label-sm text-on-surface-variant">{item.label}</p>
+                  <p className="font-body-md text-body-md text-on-surface">{item.value}</p>
+                </div>
+              </div>
             ))}
           </div>
-          {saveMsg && <p className={`font-label-sm text-label-sm ${saveMsg.includes('Error') ? 'text-error' : 'text-primary'}`}>{saveMsg}</p>}
-          <div className="flex gap-3">
+        )}
+      </section>
+
+      {/* Theme */}
+      <section className="mb-6">
+        <h4 className="font-label-md text-label-md text-on-surface-variant mb-3 uppercase tracking-wider">Appearance</h4>
+        <div className="grid grid-cols-2 gap-3">
+          {themes.map((t) => (
             <button
-              onClick={saveProfile}
-              disabled={saving}
-              className="flex-1 py-3 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold hover:shadow-brand-lg transition-all active:scale-[0.98] disabled:opacity-50"
+              key={t.value}
+              onClick={() => setTheme(t.value)}
+              className={`flex items-center gap-3 p-4 rounded-2xl border transition-all active:scale-[0.98] ${
+                theme === t.value
+                  ? 'bg-primary/10 border-primary/30 shadow-brand-sm'
+                  : 'bg-surface border-outline-variant/30 hover:bg-surface-container-high'
+              }`}
             >
-              {saving ? 'Saving...' : 'Save'}
+              <span className={`material-symbols-outlined text-[22px] ${theme === t.value ? 'text-primary' : 'text-on-surface-variant'}`}>
+                {t.icon}
+              </span>
+              <span className={`font-body-md text-body-md ${theme === t.value ? 'text-primary font-semibold' : 'text-on-surface'}`}>
+                {t.label}
+              </span>
             </button>
-            <button
-              onClick={() => { setEditing(false); setSaveMsg('') }}
-              className="flex-1 py-3 rounded-xl border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-all"
-            >
-              Cancel
-            </button>
+          ))}
         </div>
+      </section>
+
+      {/* Push Notifications */}
+      <section className="mb-6">
+        <h4 className="font-label-md text-label-md text-on-surface-variant mb-3 uppercase tracking-wider">Notifications</h4>
         <button
-          onClick={startEditing}
-          className="text-primary font-label-md text-label-md font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-primary rounded-xl px-3 py-1"
+          onClick={handlePushToggle}
+          disabled={pushLoading}
+          className="w-full flex items-center gap-3 p-4 rounded-2xl bg-surface border border-outline-variant/30 card-hover"
         >
-          Edit Profile
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${pushEnabled ? 'bg-primary/10' : 'bg-surface-container-high'}`}>
+            <span className={`material-symbols-outlined text-[20px] ${pushEnabled ? 'text-primary' : 'text-on-surface-variant'}`}>
+              {pushEnabled ? 'notifications_active' : 'notifications_off'}
+            </span>
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-body-md text-body-md text-on-surface font-medium">Push Notifications</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">{pushEnabled ? 'Enabled' : 'Disabled'}</p>
+          </div>
+          <div className={`w-12 h-7 rounded-full flex items-center transition-all ${pushEnabled ? 'bg-primary justify-end' : 'bg-surface-container-high justify-start'}`}>
+            <div className={`w-5 h-5 rounded-full mx-1 transition-all ${pushEnabled ? 'bg-on-primary' : 'bg-on-surface-variant/60'}`} />
+          </div>
         </button>
       </section>
-      )}
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { icon: 'bolt', value: '—', label: 'Days Active' },
-          { icon: 'local_fire_department', value: '—', label: 'Day Streak' },
-          { icon: 'task_alt', value: '—', label: 'Tasks Done' },
-          { icon: 'menu_book', value: '—', label: 'Journal Entries' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-surface border border-outline-variant/50 rounded-2xl p-5 flex flex-col items-center text-center hover:shadow-ambient transition-all btn-press">
-            <span className="material-symbols-outlined text-primary mb-2 text-[24px]">{stat.icon}</span>
-            <span className="font-headline-md text-headline-md text-on-surface">{stat.value}</span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">{stat.label}</span>
-          </div>
-        ))}
+      {/* Sign Out */}
+      <section className="mb-6">
+        <button
+          onClick={signOut}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-error-container/20 text-error font-semibold hover:bg-error-container/30 transition-colors active:scale-[0.98]"
+        >
+          <span className="material-symbols-outlined text-[20px]">logout</span>
+          Sign Out
+        </button>
       </section>
 
-      <section className="mt-2">
-        <h2 className="font-label-sm text-[11px] leading-[16px] font-bold tracking-[0.08em] text-on-surface-variant uppercase mb-3 px-1">Settings</h2>
-        <div className="bg-surface border border-outline-variant/50 rounded-2xl overflow-hidden flex flex-col">
-          <button
-            onClick={togglePush}
-            disabled={pushLoading}
-            className="w-full flex items-center justify-between p-4 hover:bg-surface-container-low transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-[20px]">{pushEnabled ? 'notifications_active' : 'notifications_off'}</span>
-              </div>
-              <div className="text-left">
-                <span className="font-body-md text-body-md text-on-surface font-medium block">Push Notifications</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">{pushEnabled ? 'Enabled' : 'Disabled'}</span>
-              </div>
-            </div>
-              <div className={`w-12 h-7 rounded-full transition-colors flex items-center px-0.5 ${pushEnabled ? 'bg-primary justify-end' : 'bg-outline-variant/60 justify-start'}`}>
-              <div className="w-6 h-6 rounded-full bg-surface-container-lowest shadow-sm transition-all" />
-            </div>
-          </button>
-          <div className="p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-tertiary-container/50 flex items-center justify-center text-tertiary">
-                <span className="material-symbols-outlined text-[20px]">
-                  {theme === 'black' ? 'nightlight' : theme === 'dark' ? 'dark_mode' : 'light_mode'}
-                </span>
-              </div>
-              <div>
-                <span className="font-body-md text-body-md text-on-surface font-medium block">Appearance</span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">
-                  {theme === 'black' ? 'AMOLED Black' : theme === 'dark' ? 'Dark Mode' : theme === 'white' ? 'White Mode' : 'Light Mode'}
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              {([
-                { value: 'light' as const, icon: 'light_mode', label: 'Light' },
-                { value: 'white' as const, icon: 'brightness_high', label: 'White' },
-                { value: 'dark' as const, icon: 'dark_mode', label: 'Dark' },
-                { value: 'black' as const, icon: 'nightlight', label: 'Black' },
-              ]).map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setTheme(opt.value)}
-                  className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border transition-all ${
-                    theme === opt.value
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-outline-variant/50 bg-surface-container-low text-on-surface-variant hover:border-outline'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[20px]">{opt.icon}</span>
-                  <span className="font-label-sm text-label-sm font-medium">{opt.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <button onClick={signOut} className="w-full flex items-center justify-between p-4 hover:bg-error-container/30 transition-colors cursor-pointer group border-t border-outline-variant/30">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-error-container/50 flex items-center justify-center text-error group-hover:bg-error group-hover:text-on-error transition-colors">
-                <span className="material-symbols-outlined text-[20px]">logout</span>
-              </div>
-              <span className="font-body-md text-body-md text-error font-medium">Logout</span>
-            </div>
-          </button>
-        </div>
-      </section>
+      <p className="text-center font-body-sm text-body-sm text-on-surface-variant/40 pb-4">Law Beyond v1.0.0</p>
     </main>
   )
 }

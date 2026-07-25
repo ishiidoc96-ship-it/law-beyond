@@ -17,7 +17,7 @@ export function getCurrentUserId(): string | null {
 }
 
 // Helper to get full file URL for a record
-export function getFileUrl(collection: string, recordId: string, filename: string, thumb?: string): string {
+export function getFileUrl(_collection: string, recordId: string, filename: string, thumb?: string): string {
   return pb.files.getURL({ id: recordId, collectionId: '' } as any, filename, {
     thumb: thumb || '100x100',
   })

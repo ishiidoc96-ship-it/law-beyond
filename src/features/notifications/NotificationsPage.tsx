@@ -3,147 +3,133 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNotifications } from '../../contexts/NotificationContext'
 import { getNotifications, markAsRead, markAllAsRead, type DbNotification } from '../../lib/api'
-import { timeAgo, TYPE_ICONS, TYPE_COLORS } from '../../lib/notifications'
-import { toast } from 'sonner'
+
+const typeIcon: Record<string, string> = {
+  like: 'favorite',
+  comment: 'comment',
+  friend_request: 'person_add',
+  friend_accept: 'group',
+  streak: 'local_fire_department',
+  habit: 'check_circle',
+  task: 'task_alt',
+  reminder: 'alarm',
+  system: 'info',
+}
+
+const typeColor: Record<string, string> = {
+  like: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+  comment: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+  friend_request: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+  friend_accept: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+  streak: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
+}
 
 export default function NotificationsPage() {
   const { user } = useAuth()
-  const navigate = useNavigate()
   const { refreshUnread } = useNotifications()
+  const navigate = useNavigate()
   const [notifications, setNotifications] = useState<DbNotification[]>([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const LIMIT = 30
 
   useEffect(() => {
-    if (!user) return
+    if (!user?.id) return
     setLoading(true)
-    getNotifications(user.id, LIMIT).then(({ data, error }) => {
-      if (error) {
-        toast.error('Failed to load notifications')
-        setLoading(false)
-        return
-      }
+    getNotifications(user.id).then(({ data }) => {
       setNotifications(data || [])
-      setHasMore((data?.length || 0) === LIMIT)
       setLoading(false)
     })
-  }, [user])
+  }, [user?.id])
 
-  const loadMore = async () => {
-    if (!user || !hasMore) return
-    const nextPage = page + 1
-    const { data } = await getNotifications(user.id, LIMIT * nextPage)
-    if (data) {
-      setNotifications(data)
-      setHasMore(data.length === LIMIT * nextPage)
-      setPage(nextPage)
-    }
-  }
-
-  const handleMarkAllRead = async () => {
-    if (!user) return
-    const { error } = await markAllAsRead(user.id)
-    if (error) {
-      toast.error('Failed to mark as read')
-      return
-    }
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  async function handleMarkAllRead() {
+    if (!user?.id) return
+    await markAllAsRead(user.id)
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
     refreshUnread()
   }
 
-  const handleClick = async (notif: DbNotification) => {
-    if (!notif.read) {
-      const { error } = await markAsRead(notif.id)
-      if (!error) {
-        setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n))
-        refreshUnread()
-      }
+  async function handleClick(n: DbNotification) {
+    if (!n.read) {
+      await markAsRead(n.id)
+      setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x))
+      refreshUnread()
     }
-    if (notif.link) navigate(notif.link)
+    if (n.link) navigate(n.link)
   }
 
+  const unread = notifications.filter((n) => !n.read)
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors"
-          >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold">Notifications</h1>
+    <div className="space-y-4 pb-24 md:pb-8 animate-fade-up">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-on-surface text-2xl font-bold">Notifications</h1>
+          {unread.length > 0 && (
+            <p className="text-on-surface-variant text-sm mt-0.5">{unread.length} unread</p>
+          )}
         </div>
-        {notifications.some(n => !n.read) && (
+        {unread.length > 0 && (
           <button
             onClick={handleMarkAllRead}
-            className="font-label-sm text-label-sm text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-full hover:bg-primary/5"
+            className="px-4 py-2 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
           >
             Mark all read
           </button>
         )}
       </div>
 
-      {/* List */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <span className="material-symbols-outlined text-primary animate-spin text-[36px]">progress_activity</span>
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-surface-container-high">
+              <div className="w-10 h-10 skeleton rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 skeleton w-2/3 rounded" />
+                <div className="h-3 skeleton w-1/2 rounded" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : notifications.length === 0 ? (
-        <div className="text-center py-20">
-          <span className="material-symbols-outlined text-[64px] text-on-surface-variant/20 mb-4 block">notifications_none</span>
-          <p className="font-body-lg text-body-lg text-on-surface-variant mb-2">No notifications yet</p>
-          <p className="font-body-sm text-body-sm text-on-surface-variant/60">
-            When someone interacts with your posts, you'll see it here.
-          </p>
+        <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant empty-state-icon">
+          <span className="material-symbols-outlined text-6xl mb-3 opacity-30">notifications_none</span>
+          <p className="text-lg font-medium">No notifications</p>
+          <p className="text-sm mt-1 opacity-60">You're all caught up!</p>
         </div>
       ) : (
         <div className="space-y-2">
-          {notifications.map(notif => (
+          {notifications.map((n) => (
             <button
-              key={notif.id}
-              onClick={() => handleClick(notif)}
-              className={`w-full flex items-start gap-4 p-4 rounded-2xl text-left transition-all hover:shadow-sm ${
-                !notif.read
-                  ? 'bg-surface border border-primary/20 shadow-sm'
-                  : 'bg-surface-container-low/50 hover:bg-surface-container-low border border-transparent'
+              key={n.id}
+              onClick={() => handleClick(n)}
+              className={`w-full flex items-start gap-3 p-4 rounded-2xl text-left transition-all duration-200 card-hover ${
+                !n.read
+                  ? 'bg-primary/5 border border-primary/10'
+                  : 'bg-surface-container-high border border-outline-variant/10'
               }`}
             >
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
-                TYPE_COLORS[notif.type] || TYPE_COLORS.system
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                typeColor[n.type] || 'bg-surface-container text-on-surface-variant'
               }`}>
-                <span className="material-symbols-outlined text-[20px]">
-                  {TYPE_ICONS[notif.type] || 'notifications'}
+                <span className="material-symbols-outlined text-lg">
+                  {typeIcon[n.type] || 'notifications'}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-label-md text-label-md text-on-surface mb-0.5">{notif.title}</p>
-                <p className={`font-body-sm text-body-sm leading-relaxed ${
-                  !notif.read ? 'text-on-surface' : 'text-on-surface-variant'
-                }`}>
-                  {notif.body}
+                <p className={`text-sm leading-snug ${!n.read ? 'font-semibold text-on-surface' : 'text-on-surface-variant'}`}>
+                  {n.title}
                 </p>
-                <p className="font-label-xs text-label-xs text-on-surface-variant/50 mt-1.5">
-                  {timeAgo(notif.created_at)}
+                <p className="text-xs text-on-surface-variant/70 mt-0.5">{n.body}</p>
+                <p className="text-[10px] text-on-surface-variant/50 mt-1.5">
+                  {new Date(n.created_at).toLocaleDateString(undefined, {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                  })}
                 </p>
               </div>
-              {!notif.read && (
-                <div className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+              {!n.read && (
+                <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
               )}
             </button>
           ))}
-
-          {hasMore && (
-            <button
-              onClick={loadMore}
-              className="w-full py-3 text-center font-label-sm text-label-sm text-primary hover:text-primary/80 transition-colors"
-            >
-              Load more
-            </button>
-          )}
         </div>
       )}
     </div>

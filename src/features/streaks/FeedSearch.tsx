@@ -2,7 +2,6 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { searchUsers, sendFriendRequest, getFriendRequestStatus } from '../../lib/api'
 import { playFriendSound } from '../../lib/notify-sounds'
 import { toast } from 'sonner'
-import { useAuth } from '../../contexts/AuthContext'
 
 interface SearchResult {
   id: string
@@ -16,7 +15,6 @@ interface Props {
 }
 
 export default function FeedSearch({ onAddFriend }: Props) {
-  const { user } = useAuth()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -24,7 +22,7 @@ export default function FeedSearch({ onAddFriend }: Props) {
   const [requestStatuses, setRequestStatuses] = useState<Record<string, string>>({})
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const handleSearch = useCallback(async (q: string) => {
     setQuery(q)
@@ -59,7 +57,11 @@ export default function FeedSearch({ onAddFriend }: Props) {
   const handleSendRequest = async (userId: string) => {
     if (sentRequests.has(userId)) return
     setSentRequests(prev => new Set([...prev, userId]))
-    const { data } = await sendFriendRequest(userId)
+    const { data, error } = await sendFriendRequest(userId)
+    if (error) {
+      toast.error(typeof error === 'string' ? error : error?.message || 'Failed to send request')
+      return
+    }
     if (data?.success) {
       const action = data.action
       if (action === 'auto_accepted') {
@@ -71,7 +73,7 @@ export default function FeedSearch({ onAddFriend }: Props) {
       setRequestStatuses(prev => ({ ...prev, [userId]: action === 'auto_accepted' ? 'accepted' : 'pending' }))
       onAddFriend?.()
     } else {
-      toast.error(data?.error || 'Failed to send request')
+      toast.error('Failed to send request')
     }
   }
 
