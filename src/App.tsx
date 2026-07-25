@@ -60,7 +60,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, configured } = useAuth()
   if (loading) return <div className="min-h-screen flex items-center justify-center"><span className="material-symbols-outlined text-primary animate-spin text-[48px]">progress_activity</span></div>
   if (!configured) return <SetupNotice />
-  if (!user) return <Navigate to="/onboarding" replace />
+  if (!user) return <Navigate to="/auth" replace />
   return <>{children}</>
 }
 

@@ -14,10 +14,10 @@ export default function Auth() {
   const { signIn, signUp, signInWithGoogle, user } = useAuth()
   const navigate = useNavigate()
 
-  // Redirect if already logged in
+  // Redirect if already logged in (skip if we just signed up — show success screen)
   useEffect(() => {
-    if (user) navigate('/', { replace: true })
-  }, [user, navigate])
+    if (user && !showSignUpSuccess) navigate('/', { replace: true })
+  }, [user, navigate, showSignUpSuccess])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +32,7 @@ export default function Auth() {
       setError(result.error)
     } else if (!isLogin) {
       setShowSignUpSuccess(true)
-      setTimeout(() => navigate('/onboarding'), 2000)
+      setTimeout(() => navigate('/'), 2000)
     }
 
     setLoading(false)
