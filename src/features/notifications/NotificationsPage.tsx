@@ -32,17 +32,17 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.uid) return
     setLoading(true)
-    getNotifications(user.id).then(({ data }) => {
+    getNotifications(user.uid).then(({ data }) => {
       setNotifications(data || [])
       setLoading(false)
     })
-  }, [user?.id])
+  }, [user?.uid])
 
   async function handleMarkAllRead() {
-    if (!user?.id) return
-    await markAllAsRead(user.id)
+    if (!user?.uid) return
+    await markAllAsRead(user.uid)
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
     refreshUnread()
   }

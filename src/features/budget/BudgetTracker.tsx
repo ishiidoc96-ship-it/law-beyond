@@ -79,13 +79,13 @@ export default function BudgetTracker() {
 
   useEffect(() => {
     async function load() {
-      if (!user?.id) return
-      const { data } = await getTransactions(user.id)
+      if (!user?.uid) return
+      const { data } = await getTransactions(user.uid)
       if (data) setTransactions(data)
       setLoading(false)
     }
     load()
-  }, [user?.id])
+  }, [user?.uid])
 
   const balance = transactions.reduce((acc, t) => acc + (t.type === 'income' ? t.amount : -t.amount), 0)
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
@@ -102,7 +102,7 @@ export default function BudgetTracker() {
 
   const handleCreate = async () => {
     if (!user || !amount || Number(amount) <= 0) return
-    const { error: createError } = await createTransaction(user.id, {
+    const { error: createError } = await createTransaction(user.uid, {
       title: description.trim() || `${type === 'income' ? 'Income' : 'Expense'}`,
       type,
       amount: Number(amount),
@@ -117,7 +117,7 @@ export default function BudgetTracker() {
     setAmount('')
     setDescription('')
     setCategory('general')
-    const { data } = await getTransactions(user.id)
+    const { data } = await getTransactions(user.uid)
     if (data) setTransactions(data)
   }
 

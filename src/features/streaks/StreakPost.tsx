@@ -57,7 +57,7 @@ export default memo(function StreakPost({ post, onOpen, onDeleted, onLikeChange 
   }
   const music = parseMusic(post.music_track)
 
-  const isOwner = user?.id === post.user_id
+  const isOwner = user?.uid === post.user_id
   const profile = post.profiles
   const displayName = profile?.full_name || 'Anonymous'
   const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -68,11 +68,11 @@ export default memo(function StreakPost({ post, onOpen, onDeleted, onLikeChange 
     if (!user || liking) return
     setLiking(true)
     if (post.user_has_liked) {
-      await unlikeStreakPost(post.id, user.id)
+      await unlikeStreakPost(post.id, user.uid)
       onLikeChange(post.id, false, post.like_count - 1)
       hapticError()
     } else {
-      await likeStreakPost(post.id, user.id)
+      await likeStreakPost(post.id, user.uid)
       onLikeChange(post.id, true, post.like_count + 1)
       playLikeSound()
       hapticSuccess()

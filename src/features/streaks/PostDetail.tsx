@@ -85,10 +85,10 @@ export default function PostDetail({ post, onClose, onLikeChange }: PostDetailPr
     if (!user || liking) return
     setLiking(true)
     if (post.user_has_liked) {
-      await unlikeStreakPost(post.id, user.id)
+      await unlikeStreakPost(post.id, user.uid)
       onLikeChange(post.id, false, post.like_count - 1)
     } else {
-      await likeStreakPost(post.id, user.id)
+      await likeStreakPost(post.id, user.uid)
       onLikeChange(post.id, true, post.like_count + 1)
     }
     setLiking(false)
@@ -99,7 +99,7 @@ export default function PostDetail({ post, onClose, onLikeChange }: PostDetailPr
     setSending(true)
     setCommentError('')
     try {
-      const { data, error } = await addStreakComment(post.id, user.id, newComment.trim())
+      const { data, error } = await addStreakComment(post.id, user.uid, newComment.trim())
       if (error) {
         setCommentError(error.message || 'Failed to post comment')
       } else if (data) {
@@ -278,7 +278,7 @@ export default function PostDetail({ post, onClose, onLikeChange }: PostDetailPr
                           </div>
                           <div className="flex items-center gap-3 mt-1 px-1">
                             <span className="font-label-sm text-label-sm text-on-surface-variant">{timeAgo(comment.created_at)}</span>
-                            {comment.user_id === user?.id && (
+                            {comment.user_id === user?.uid && (
                               <button
                                 onClick={() => handleDeleteComment(comment.id)}
                                 className="font-label-sm text-label-sm text-on-surface-variant hover:text-error opacity-0 group-hover:opacity-100 transition-all"

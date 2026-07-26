@@ -1,4 +1,4 @@
-import { pb } from './pb'
+import { savePushSubscription, removePushSubscription } from './api'
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
 
@@ -42,19 +42,9 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     const json = subscription.toJSON()
     const endpoint = json.endpoint || ''
     const p256dh = (json.keys?.p256dh as string) || ''
-    const auth = (json.keys?.auth as string) || ''
+    const authKey = (json.keys?.auth as string) || ''
 
-    // Save to PocketBase push_subscriptions collection
-    const existing = await pb.collection('push_subscriptions').getList(1, 1, {
-      filter: `user = "${userId}" && endpoint = "${endpoint}"`,
-    })
-
-    if (existing.items.length > 0) {
-      await pb.collection('push_subscriptions').update(existing.items[0].id, { p256dh, auth_key: auth })
-    } else {
-      await pb.collection('push_subscriptions').create({ user: userId, endpoint, p256dh, auth_key: auth })
-    }
-
+    await savePushSubscription(userId, endpoint, p256dh, authKey)
     return true
   } catch (err) {
     console.error('Push subscription failed:', err)
@@ -70,16 +60,7 @@ export async function unsubscribeFromPush(userId: string): Promise<boolean> {
     if (!subscription) return false
 
     const endpoint = subscription.endpoint
-
-    // Remove from PocketBase
-    const existing = await pb.collection('push_subscriptions').getList(1, 1, {
-      filter: `user = "${userId}" && endpoint = "${endpoint}"`,
-    })
-
-    if (existing.items.length > 0) {
-      await pb.collection('push_subscriptions').delete(existing.items[0].id)
-    }
-
+    await removePushSubscription(userId, endpoint)
     await subscription.unsubscribe()
     return true
   } catch (err) {

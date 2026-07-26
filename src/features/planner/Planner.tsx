@@ -99,8 +99,8 @@ export default function Planner() {
   const fetchData = useCallback(async () => {
     if (!user) return
     const [tasksRes, assignmentsRes] = await Promise.all([
-      getTasks(user.id),
-      getAssignments(user.id),
+      getTasks(user.uid),
+      getAssignments(user.uid),
     ])
     if (tasksRes.data) setTasks(tasksRes.data)
     if (assignmentsRes.data) setAssignments(assignmentsRes.data)
@@ -127,7 +127,7 @@ export default function Planner() {
   const handleCreate = async () => {
     if (!user || !newTitle.trim()) return
     if (modalType === 'task') {
-      const { error: createError } = await createTask(user.id, {
+      const { error: createError } = await createTask(user.uid, {
         title: newTitle.trim(),
         description: newDescription.trim(),
         due_date: newDueDate || selectedDay,
@@ -138,7 +138,7 @@ export default function Planner() {
         return
       }
     } else {
-      const { error: createError } = await createAssignment(user.id, {
+      const { error: createError } = await createAssignment(user.uid, {
         title: newTitle.trim(),
         description: newSubject.trim() || 'General',
         due_date: newDueDate || selectedDay,
@@ -164,7 +164,7 @@ export default function Planner() {
 
   const handleDeleteTask = async (taskId: string) => {
     if (!user) return
-    const { error: deleteError } = await deleteTask(taskId, user.id)
+    const { error: deleteError } = await deleteTask(taskId, user.uid)
     if (deleteError) {
       setError('Failed to delete task')
       return

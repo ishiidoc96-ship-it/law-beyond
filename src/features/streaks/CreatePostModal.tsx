@@ -185,7 +185,7 @@ export default function CreatePostModal({ open, onClose, onCreated, initialFile,
 
       const captionText = sanitizeForUpload(caption)
       const musicTrackStr = selectedMusic ? JSON.stringify({ title: selectedMusic.title, artist: selectedMusic.artist, artwork: selectedMusic.artworkUrl, preview: selectedMusic.previewUrl }) : undefined
-      const { error: postError } = await createStreakPost(user.id, {
+      const { error: postError } = await createStreakPost(user.uid, {
         media_url: result.secure_url,
         media_type: mediaType,
         caption: captionText || undefined,

@@ -39,8 +39,8 @@ export default function HabitTracker() {
   const fetchData = useCallback(async () => {
     if (!user) return
     const [habitsRes, completionsRes] = await Promise.all([
-      getHabits(user.id),
-      getHabitCompletions(user.id),
+      getHabits(user.uid),
+      getHabitCompletions(user.uid),
     ])
     if (habitsRes.data) setHabits(habitsRes.data)
     if (completionsRes.data) {
@@ -60,7 +60,7 @@ export default function HabitTracker() {
   const handleToggle = async (habitId: string) => {
     if (!user) return
     const today = new Date().toISOString().split('T')[0]
-    const { data, error: toggleError } = await toggleHabitCompletion(user.id, habitId, today)
+    const { data, error: toggleError } = await toggleHabitCompletion(user.uid, habitId, today)
     if (toggleError) {
       setError('Failed to update habit')
       return
@@ -78,7 +78,7 @@ export default function HabitTracker() {
 
   const handleAdd = async () => {
     if (!user || !newName.trim()) return
-    const { error: addError } = await createHabit(user.id, {
+    const { error: addError } = await createHabit(user.uid, {
       name: newName.trim(),
       category: newCategory,
       icon: newIcon,

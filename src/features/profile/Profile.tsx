@@ -74,13 +74,13 @@ export default function Profile() {
     setPushLoading(true)
     try {
       if (pushEnabled) {
-        await unsubscribeFromPush(user!.id)
+        await unsubscribeFromPush(user!.uid)
         setPushEnabled(false)
         toast.success('Push notifications disabled')
       } else {
         const granted = await requestNotificationPermission()
         if (granted) {
-          await subscribeToPush(user!.id)
+          await subscribeToPush(user!.uid)
           setPushEnabled(true)
           toast.success('Push notifications enabled')
         } else {
@@ -114,7 +114,7 @@ export default function Profile() {
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
-              (user?.name || 'U')[0].toUpperCase()
+              (user?.displayName || 'U')[0].toUpperCase()
             )}
           </div>
           <button
@@ -132,7 +132,7 @@ export default function Profile() {
             onChange={handleAvatarUpload}
           />
         </div>
-        <h3 className="font-headline-md text-headline-md text-on-surface">{profile?.full_name || user?.name || 'User'}</h3>
+        <h3 className="font-headline-md text-headline-md text-on-surface">{profile?.full_name || user?.displayName || 'User'}</h3>
         <p className="font-body-sm text-body-sm text-on-surface-variant">{user?.email}</p>
       </section>
 

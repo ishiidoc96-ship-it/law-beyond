@@ -17,13 +17,13 @@ export default function HomeDashboard() {
 
   useEffect(() => {
     async function load() {
-      if (!user?.id) return
+      if (!user?.uid) return
       setLoading(true)
       const [streakRes, habitsRes, completionsRes, tasksRes] = await Promise.all([
-        getUserStreakStats(user.id),
-        getHabits(user.id),
-        getHabitCompletions(user.id),
-        getTodayTasks(user.id),
+        getUserStreakStats(user.uid),
+        getHabits(user.uid),
+        getHabitCompletions(user.uid),
+        getTodayTasks(user.uid),
       ])
       setStreak(streakRes.data?.current_streak || 0)
       setHabitsToday(
@@ -35,7 +35,7 @@ export default function HomeDashboard() {
       setLoading(false)
     }
     load()
-  }, [user?.id])
+  }, [user?.uid])
 
   const hour = new Date().getHours()
   const greeting =
@@ -77,7 +77,7 @@ export default function HomeDashboard() {
       <div className="animate-fade-up">
         <p className="text-on-surface-variant text-sm font-medium">{greeting}</p>
         <h2 className="text-on-surface text-2xl font-bold mt-0.5">
-          {user?.name || 'Lawyer'}
+          {user?.displayName || 'Lawyer'}
         </h2>
       </div>
 

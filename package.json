@@ -5,17 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:all": "concurrently \"vite\" \"./pocketbase.exe serve --http=127.0.0.1:8090 --dir ./pb_data\"",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview",
-    "pb": "./pocketbase.exe serve --http=127.0.0.1:8090 --dir ./pb_data",
-    "pb:setup": "node pocketbase-setup.js",
-    "pb:admin": "echo Open http://127.0.0.1:8090/_/admin in your browser"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@sentry/react": "^8.55.2",
-    "pocketbase": "^0.27.0",
+    "firebase": "^11.0.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",

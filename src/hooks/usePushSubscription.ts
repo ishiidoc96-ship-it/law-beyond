@@ -8,7 +8,7 @@ export function usePushSubscription() {
   useEffect(() => {
     if (!user) return
     if (Notification.permission === 'granted') {
-      subscribeToPush(user.id).catch(() => {})
+      subscribeToPush(user.uid).catch(() => {})
     }
   }, [user])
 }

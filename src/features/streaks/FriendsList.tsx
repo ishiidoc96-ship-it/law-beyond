@@ -16,7 +16,7 @@ export default function FriendsList({ onRefresh }: FriendsListProps) {
 
   useEffect(() => {
     if (!user) return
-    getFriends(user.id).then(({ data }) => {
+    getFriends(user.uid).then(({ data }) => {
       if (data) setFriends(data)
       setLoading(false)
     })

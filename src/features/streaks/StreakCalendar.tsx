@@ -17,7 +17,7 @@ export default function StreakCalendar({ currentStreak }: StreakCalendarProps) {
   useEffect(() => {
     if (!user) return
     setLoading(true)
-    getStreakCalendar(user.id, year, month).then(({ data }) => {
+    getStreakCalendar(user.uid, year, month).then(({ data }) => {
       if (data?.posted_dates) {
         setPostedDates(data.posted_dates.map((d: string) => new Date(d).getDate()))
       } else {

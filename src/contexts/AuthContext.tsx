@@ -1,10 +1,18 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { pb } from '../lib/pb'
+import { auth, db } from '../lib/firebase'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  type User as FirebaseUser,
+} from 'firebase/auth'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { getProfile, upsertProfile, type DbProfile } from '../lib/api'
-import type { RecordModel } from 'pocketbase'
 
 interface AuthContextValue {
-  user: RecordModel | null
+  user: FirebaseUser | null
   profile: DbProfile | null
   loading: boolean
   configured: boolean
@@ -17,7 +25,7 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue>({
-  user: null, profile: null, loading: true, configured: false,
+  user: null, profile: null, loading: true, configured: true,
   signUp: async () => ({}), signIn: async () => ({}), signInWithGoogle: async () => ({}), signOut: async () => {},
   updateProfile: async () => ({}), refreshProfile: async () => {},
 })
@@ -25,13 +33,12 @@ const AuthContext = createContext<AuthContextValue>({
 export function useAuth() { return useContext(AuthContext) }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<RecordModel | null>(null)
+  const [user, setUser] = useState<FirebaseUser | null>(null)
   const [profile, setProfile] = useState<DbProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const configured = !!import.meta.env.VITE_POCKETBASE_URL || pb.baseUrl !== ''
+  const configured = true // Firebase config is always present
 
-  // Load profile when user changes
   const loadProfile = useCallback(async (userId: string) => {
     try {
       const { data } = await getProfile(userId)
@@ -41,38 +48,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Listen for auth changes
   useEffect(() => {
-    // Set initial state from stored auth
-    if (pb.authStore.isValid && pb.authStore.record) {
-      setUser(pb.authStore.record)
-      loadProfile(pb.authStore.record.id)
-    }
-    setLoading(false)
-
-    // Subscribe to auth changes
-    const unsubscribe = pb.authStore.onChange((_token, record) => {
-      setUser(record)
-      if (record) {
-        loadProfile(record.id)
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser)
+      if (firebaseUser) {
+        loadProfile(firebaseUser.uid)
       } else {
         setProfile(null)
       }
+      setLoading(false)
     })
-
     return () => unsubscribe()
   }, [loadProfile])
 
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {
     try {
-      await pb.collection('users').create({ email, password, passwordConfirm: password, name: fullName })
-      // Auto sign in after signup
-      await pb.collection('users').authWithPassword(email, password)
+      const cred = await createUserWithEmailAndPassword(auth, email, password)
+      // Create user doc in Firestore
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        email, name: fullName, createdAt: serverTimestamp(),
+      })
       // Create profile
-      const userId = pb.authStore.record?.id
-      if (userId) {
-        await upsertProfile(userId, { full_name: fullName, email })
-      }
+      await upsertProfile(cred.user.uid, { full_name: fullName, email })
       return {}
     } catch (e: any) {
       return { error: e?.message || 'Sign up failed' }
@@ -81,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      await pb.collection('users').authWithPassword(email, password)
+      await signInWithEmailAndPassword(auth, email, password)
       return {}
     } catch (e: any) {
       return { error: e?.message || 'Sign in failed' }
@@ -90,17 +87,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     try {
-      const authData = await pb.collection('users').authWithOAuth2({ provider: 'google' })
+      const provider = new GoogleAuthProvider()
+      const cred = await signInWithPopup(auth, provider)
       // Auto-create profile if new user
-      if (authData?.record?.id) {
-        const existingProfile = await getProfile(authData.record.id).catch(() => null)
-        if (!existingProfile?.data) {
-          await upsertProfile(authData.record.id, {
-            full_name: authData.record.name || authData.record.username || '',
-            email: authData.record.email || '',
-            avatar_url: authData.record.avatarUrl || '',
-          }).catch(() => {})
-        }
+      const existingProfile = await getProfile(cred.user.uid).catch(() => null)
+      if (!existingProfile?.data) {
+        await upsertProfile(cred.user.uid, {
+          full_name: cred.user.displayName || '',
+          email: cred.user.email || '',
+          avatar_url: cred.user.photoURL || '',
+        }).catch(() => {})
       }
       return {}
     } catch (e: any) {
@@ -109,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
-    pb.authStore.clear()
+    await auth.signOut()
     setUser(null)
     setProfile(null)
   }, [])
@@ -117,9 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(async (data: Partial<DbProfile>) => {
     if (!user) return { error: 'Not authenticated' }
     try {
-      const { error } = await upsertProfile(user.id, data)
+      const { error } = await upsertProfile(user.uid, data)
       if (error) return { error: error.message }
-      await loadProfile(user.id)
+      await loadProfile(user.uid)
       return {}
     } catch (e: any) {
       return { error: e?.message || 'Update failed' }
@@ -127,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, loadProfile])
 
   const refreshProfile = useCallback(async () => {
-    if (user) await loadProfile(user.id)
+    if (user) await loadProfile(user.uid)
   }, [user, loadProfile])
 
   return (

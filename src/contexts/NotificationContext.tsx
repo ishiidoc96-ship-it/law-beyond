@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { getUnreadCount } from '../lib/api'
-import { pb } from '../lib/pb'
 
 interface NotificationContextValue {
   unread: number
@@ -20,27 +19,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const refreshUnread = useCallback(async () => {
     if (!user) { setUnread(0); return }
-    const { count } = await getUnreadCount(user.id)
+    const { count } = await getUnreadCount(user.uid)
     setUnread(count)
   }, [user])
 
   useEffect(() => {
     if (!user) { setUnread(0); return }
-
+    // Poll for unread notifications every 30 seconds
     refreshUnread()
-
-    // Subscribe to real-time notifications via PocketBase
-    let unsubscribe: (() => void) | undefined
-
-    pb.collection('notifications').subscribe('*', () => {
-      refreshUnread()
-    }).then((unsub) => {
-      unsubscribe = unsub
-    }).catch(() => {
-      // Realtime subscription failed - fall back to polling
-    })
-
-    return () => { unsubscribe?.() }
+    const interval = setInterval(refreshUnread, 30000)
+    return () => clearInterval(interval)
   }, [user, refreshUnread])
 
   return (

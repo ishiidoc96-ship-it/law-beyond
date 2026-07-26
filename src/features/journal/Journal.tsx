@@ -37,7 +37,7 @@ export default function Journal() {
 
   const fetchEntries = async () => {
     if (!user) return
-    const { data } = await getJournalEntries(user.id)
+    const { data } = await getJournalEntries(user.uid)
     if (data) setEntries(data)
     setLoading(false)
   }
@@ -50,7 +50,7 @@ export default function Journal() {
     if (!user || !entry.trim() || saving) return
     setSaving(true)
     setError('')
-    const { error: saveError } = await createJournalEntry(user.id, {
+    const { error: saveError } = await createJournalEntry(user.uid, {
       title: entry.trim().slice(0, 50),
       content: entry.trim(),
       mood: moods[selectedMood],

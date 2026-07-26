@@ -10,7 +10,7 @@ export default function NotificationPrompt() {
 
   useEffect(() => {
     if (!user || dismissed) return
-    const key = `notif_prompt_dismissed_${user.id}`
+    const key = `notif_prompt_dismissed_${user.uid}`
     if (localStorage.getItem(key)) return
     isPushSubscribed().then(subscribed => {
       if (!subscribed) setVisible(true)
@@ -22,10 +22,10 @@ export default function NotificationPrompt() {
     setLoading(true)
     const granted = await requestNotificationPermission()
     if (granted === 'granted') {
-      const ok = await subscribeToPush(user.id)
+      const ok = await subscribeToPush(user.uid)
       if (ok) {
         setVisible(false)
-        localStorage.setItem(`notif_prompt_dismissed_${user.id}`, '1')
+        localStorage.setItem(`notif_prompt_dismissed_${user.uid}`, '1')
       }
     }
     setLoading(false)
@@ -34,7 +34,7 @@ export default function NotificationPrompt() {
   const handleDismiss = () => {
     setVisible(false)
     setDismissed(true)
-    if (user) localStorage.setItem(`notif_prompt_dismissed_${user.id}`, '1')
+    if (user) localStorage.setItem(`notif_prompt_dismissed_${user.uid}`, '1')
   }
 
   if (!visible) return null

@@ -60,7 +60,7 @@ export default function DesktopSidebar() {
             <span className="material-symbols-outlined text-on-primary-container text-lg">person</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-on-surface truncate">{user?.name || 'User'}</p>
+            <p className="text-sm font-medium text-on-surface truncate">{user?.displayName || 'User'}</p>
             <p className="text-xs text-on-surface-variant truncate">{user?.email}</p>
           </div>
         </div>

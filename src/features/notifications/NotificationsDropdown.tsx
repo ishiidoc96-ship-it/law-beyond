@@ -28,17 +28,17 @@ export default function NotificationsDropdown({ onClose }: Props) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.uid) return
     setLoading(true)
-    getNotifications(user.id, 20).then(({ data }) => {
+    getNotifications(user.uid, 20).then(({ data }) => {
       setNotifications(data || [])
       setLoading(false)
     })
-  }, [user?.id, refreshUnread])
+  }, [user?.uid, refreshUnread])
 
   async function handleMarkAllRead() {
-    if (!user?.id) return
-    await markAllAsRead(user.id)
+    if (!user?.uid) return
+    await markAllAsRead(user.uid)
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
     refreshUnread()
   }

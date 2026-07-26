@@ -45,9 +45,9 @@ export default function Streaks() {
   const fetchFeed = useCallback(async () => {
     if (!user) return
     const [feedRes, statsRes, countRes] = await Promise.all([
-      getStreakFeed(user.id),
-      getUserStreakStats(user.id),
-      getTotalStreakPostCount(user.id),
+      getStreakFeed(user.uid),
+      getUserStreakStats(user.uid),
+      getTotalStreakPostCount(user.uid),
     ])
     if (feedRes.data) setPosts(feedRes.data)
     if (statsRes.data) setStreakData(statsRes.data)

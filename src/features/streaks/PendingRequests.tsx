@@ -17,7 +17,7 @@ export default function PendingRequests({ onRequestHandled }: PendingRequestsPro
 
   const fetchRequests = async () => {
     if (!user) return
-    const { data } = await getFriendRequests(user.id)
+    const { data } = await getFriendRequests(user.uid)
     if (data) setRequests(data)
     setLoading(false)
   }

@@ -20,7 +20,7 @@ export default function StreakFreezeButton({ freezeAvailable, currentStreak, onF
   const handleFreeze = async () => {
     if (!user || loading) return
     setLoading(true)
-    const { data } = await useStreakFreeze(user.id)
+    const { data } = await useStreakFreeze(user.uid)
     if (data?.success) {
       onFreezeUsed()
       toast.success('Streak frozen! Your streak is protected for 1 day.')
